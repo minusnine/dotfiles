@@ -1,9 +1,10 @@
 set nocompatible               " be iMproved
 filetype off                   " required!
-
-call pathogen#infect()
-call pathogen#helptags()
-
+set rtp+=~/.vim/bundle/vundle/
+call vundle#rc()
+Bundle 'gmarik/vundle'
+Bundle 'scrooloose/syntastic'
+Bundle 'myusuf3/numbers.vim'
 filetype plugin indent on
 
 set autoindent           " Preserve current indent on new lines
