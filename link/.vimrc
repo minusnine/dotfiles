@@ -1,16 +1,16 @@
 set nocompatible               " be iMproved
 filetype off                   " required!
 
-set rtp+=~/.vim/bundle/vundle/
-call vundle#rc()
-Bundle 'gmarik/vundle'
+call pathogen#infect()
+call pathogen#helptags()
+
 filetype plugin indent on
 
 set autoindent           " Preserve current indent on new lines
 set backspace=indent,eol,start    "Make backspaces delete sensibly
 set backup               " keep backups of files when overwriting them
-set backupdir=~/.vim/tmp " keep backups in this directory
-set directory=~/.vim/tmp " put swap files in this directory
+set backupdir=~/tmp/vim " keep backups in this directory
+set directory=~/tmp/vim " put swap files in this directory
 set expandtab            " Convert all tabs typed to spaces
 set modeline             " look for modelines in the first 10 lines
 set modelines=10         " ibid
