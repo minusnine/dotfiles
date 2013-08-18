@@ -45,3 +45,4 @@ plugins=(git)
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
+SHELL=/usr/bin/zsh

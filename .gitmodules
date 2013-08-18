@@ -1,0 +1,6 @@
+[submodule "libs/vundle"]
+	path = libs/vundle
+	url = https://github.com/gmarik/vundle.git
+[submodule "libs/oh-my-zsh"]
+	path = libs/oh-my-zsh
+	url = https://github.com/robbyrussell/oh-my-zsh.git

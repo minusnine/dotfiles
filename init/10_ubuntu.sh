@@ -39,3 +39,4 @@ if [[ ! "$(type -P git-extras)" ]]; then
 fi
 
 git clone git://github.com/robbyrussell/oh-my-zsh.git /home/ekg/src/oh-my-zsh
+git clone git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
