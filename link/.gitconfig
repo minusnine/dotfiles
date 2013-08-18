@@ -1,0 +1,11 @@
+[user]
+  name = Eric Garrido
+  email = eric@ericgar.com
+[color]
+  diff = true
+  status = true
+  ui = true
+[include]
+  path = custom/gitconfig
+[rerere]
+  enabled = 1

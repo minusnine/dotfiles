@@ -1,0 +1,4 @@
+clear Lock
+keycode 66 = Escape
+keycode 9 = Escape
+
