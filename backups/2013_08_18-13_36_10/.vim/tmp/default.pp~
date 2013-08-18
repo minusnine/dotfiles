@@ -1,0 +1,5 @@
+class acpi {
+  "/etc/acpi/events/lidbtn"
+      ensure => "present",
+      source => "puppet:///modules/user/xmobarrc";
+}

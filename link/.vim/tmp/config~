@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[submodule "libs/vundle"]
+	url = https://github.com/gmarik/vundle.git
+[submodule "oh-my-zsh"]
+	url = https://github.com/robbyrussell/oh-my-zsh.git

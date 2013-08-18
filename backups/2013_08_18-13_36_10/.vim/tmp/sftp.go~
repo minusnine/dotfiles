@@ -1,0 +1,478 @@
+package sftp
+
+import (
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"sync"
+
+	"code.google.com/p/go.crypto/ssh"
+)
+
+// These are SSH file transer protocol (SFTP) packet types, as defined in section 3...
+const (
+	fxpPacketInit = iota + 1
+	fxpPacketVersion
+	fxpPacketOpen
+	fxpPacketClose
+	fxpPacketRead
+	fxpPacketWrite
+	fxpPacketLStat
+	fxpPacketFStat
+	fxpPacketSetStat
+	fxpPacketFSetStat
+	fxpPacketOpenDir
+	fxpPacketReadDir
+	fxpPacketRemove
+	fxpPacketMkDir
+	fxpPacketRmDir
+	fxpPacketRealPath
+	fxpPacketStat
+	fxpPacketRename
+	fxpPacketReadLink
+	fxpPacketSymLink
+)
+
+const (
+	fxpPacketStatus = iota + 101
+	fxpPacketHandle
+	fxpPacketData
+	fxpPacketName
+	fxpPacketAttrs
+	fxpPacketExtended
+	fxpPacketExtendedReply
+)
+
+const (
+	fxpAttrSize       = 1
+	fxpAttrUIDGID     = 2
+	fxpAttrPermisions = 4
+	fxpAttrACModTime  = 8
+	fxpAttrExtended   = 0x80000000
+)
+
+type fileAttributes struct {
+	Flags         uint32
+	Size          uint64
+	Uid           uint32
+	Gid           uint32
+	Permissions   uint32
+	ATime         uint32
+	MTime         uint32
+	ExtendedCount uint32
+	Data          []byte `ssh:"rest"`
+}
+
+const (
+	fxpOpenRead   = 1
+	fxpOpenWrite  = 2
+	fxpOpenAppend = 4
+	fxpOpenCreat  = 8
+	fxpOpenTrunc  = 16
+	fxpOpenExcl   = 32
+)
+
+type fxpVersionMsg struct {
+	Version uint32
+	Data    []byte `ssh:"rest"`
+}
+
+type fxpOpenMsg struct {
+	ID       uint32
+	Filename string
+	Pflags   uint32
+	Attrs    fileAttributes
+}
+
+type fxpCloseMsg struct {
+	ID     uint32
+	Handle string
+}
+
+type fxpReadMsg struct {
+	ID     uint32
+	Handle string
+	Offset uint64
+	Length uint32
+}
+
+type fxpWriteMsg struct {
+	ID     uint32
+	Handle string
+	Offset uint64
+	Data   []byte
+}
+
+type fxpRemoveMsg struct {
+	ID       uint32
+	Filename string
+}
+
+type fxpRenameMsg struct {
+	ID      uint32
+	OldPath string
+	NewPath string
+}
+
+type fxpMkDirMsg struct {
+	ID    uint32
+	Path  string
+	Attrs fileAttributes
+}
+
+type fxpRmDirMsg struct {
+	ID   uint32
+	Path string
+}
+
+type fxpOpenDirMsg struct {
+	ID   uint32
+	Path string
+}
+
+type fxpReadDirMsg struct {
+	ID     uint32
+	Handle string
+}
+
+type fxpStatMsg struct {
+	ID   uint32
+	Path string
+}
+
+type fxpFStatMsg struct {
+	ID     uint32
+	Handle string
+}
+
+type fxpFSetStatMsg struct {
+	ID    uint32
+	Path  string
+	attrs fileAttributes
+}
+
+type fxpReadLinkMsg struct {
+	ID   uint32
+	Path string
+}
+
+type fxpRealPathMsg struct {
+	ID   uint32
+	Path string
+}
+
+//////////////////////////////
+
+const (
+	fxpStatusOK = iota
+	fxpStatusEOF
+	fxpStatusNoSuchFile
+	fxpStatusPermissionDenied
+	fxpStatusFailure
+	fxpStatusBadMessage
+	fxpStatusNoConnection
+	fxpStatusConnectionLost
+	fxpStatusOpUnsupported
+)
+
+type fxpStatusResp struct {
+	ID       uint32
+	Status   uint32
+	Msg      string
+	Language string
+}
+
+type fxpHandleResp struct {
+	ID     uint32
+	Handle string
+}
+
+type fxpDataResp struct {
+	ID   uint32
+	Data []byte
+}
+
+type fxpNameData struct {
+	ID       uint32
+	Filename string
+	Longname string
+	Attrs    fileAttributes
+}
+
+type fxpNameResp struct {
+	ID   uint32
+	Data []fxpNameData
+}
+
+type fxpAttrsResp struct {
+	ID    uint32
+	Attrs fileAttributes
+}
+
+type fxpExtendedResp struct {
+	ID   uint32
+	Data []byte
+}
+
+// UnexpectedMessageError results when the SSH message that we received didn't
+// match what we wanted.
+type UnexpectedMessageError struct {
+	expected, got uint8
+}
+
+func (u UnexpectedMessageError) Error() string {
+	return fmt.Sprintf("ssh: unexpected message type %d (expected %d)", u.got, u.expected)
+}
+
+// ParseError results from a malformed SSH message.
+type ParseError struct {
+	msgType uint8
+}
+
+func (p ParseError) Error() string {
+	return fmt.Sprintf("ssh: parse error in message type %d", p.msgType)
+}
+
+type fxpChan struct {
+	ID uint32
+	c  chan interface{}
+}
+
+func (c *fxpChan) waitForResponse() interface{} {
+	return <-c.c
+}
+
+type fxpChanList struct {
+	sync.Mutex
+	chans []*fxpChan
+}
+
+func (l *fxpChanList) newChan() *fxpChan {
+	// TODO(ekg): in this implementation and in ssh's chanList, if a
+	// client creates too many channels, channels will become
+	// inaccessible.
+	l.Lock()
+	defer l.Unlock()
+	for i := range l.chans {
+		if l.chans[i] == nil {
+			ch := &fxpChan{ID: uint32(i), c: make(chan interface{}, 16)}
+			l.chans[i] = ch
+			return ch
+		}
+	}
+	ch := &fxpChan{ID: uint32(len(l.chans)), c: make(chan interface{}, 16)}
+	l.chans = append(l.chans, ch)
+	return ch
+}
+
+func (l *fxpChanList) getChan(id uint32) *fxpChan {
+	l.Lock()
+	defer l.Unlock()
+	if uint32(id) >= uint32(len(l.chans)) {
+		return nil
+	}
+	return l.chans[id]
+}
+
+func (l *fxpChanList) remove(id uint32) {
+	l.Lock()
+	defer l.Unlock()
+	// TODO(ekg): out of bounds?
+	l.chans[id] = nil
+}
+
+func (l *fxpChanList) closeAll() {
+	l.Lock()
+	defer l.Unlock()
+	for _, ch := range l.chans {
+		if ch == nil {
+			continue
+		}
+		close(ch.c)
+	}
+}
+
+type SFTP struct {
+	*ssh.Session
+	stdin  io.WriteCloser
+	stdout io.Reader
+	stderr io.Reader
+	chans  *fxpChanList
+}
+
+func NewSFTP(s *ssh.Session) (*SFTP, error) {
+	stdin, err := s.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	stdout, err := s.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	stderr, err := s.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.RequestSubsystem("sftp"); err != nil {
+		return nil, err
+	}
+	sftp := &SFTP{
+		Session: s,
+		stdin:   stdin,
+		stdout:  stdout,
+		stderr:  stderr,
+		chans:   &fxpChanList{},
+	}
+
+	if err := sftp.init(); err != nil {
+		return nil, err
+	}
+	return sftp, nil
+}
+
+func (s *SFTP) init() error {
+	msg := fxpVersionMsg{
+		Version: 3,
+	}
+	if err := s.writePacket(marshal(fxpPacketInit, msg)); err != nil {
+		return err
+	}
+	packet, err := s.readOnePacket()
+	if err != nil {
+		return err
+	}
+	resp, err := decodeSFTP(packet)
+	if err != nil {
+		return err
+	}
+	switch resp := resp.(type) {
+	case *fxpVersionMsg:
+		if resp.Version != 3 {
+			return errors.New("only version 3 of SFTP protocol supported")
+		}
+	default:
+		return errors.New("invalid packet received during initialization")
+	}
+	go s.mainLoop()
+
+	return nil
+}
+
+func (s *SFTP) writePacket(packet []byte) error {
+	length := len(packet)
+	lengthBytes := []byte{
+		byte(length >> 24),
+		byte(length >> 16),
+		byte(length >> 8),
+		byte(length),
+	}
+	if _, err := s.stdin.Write(lengthBytes); err != nil {
+		return err
+	}
+	if _, err := s.stdin.Write(packet); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *SFTP) readOnePacket() ([]byte, error) {
+	lengthBytes := make([]byte, 4)
+	if _, err := io.ReadFull(s.stdout, lengthBytes); err != nil {
+		return nil, err
+	}
+	length := binary.BigEndian.Uint32(lengthBytes[0:4])
+	packet := make([]byte, length)
+	if _, err := io.ReadFull(s.stdout, packet); err != nil {
+		return nil, err
+	}
+	return packet, nil
+}
+
+func (s *SFTP) dispatchMsg(msg interface{}, id uint32) {
+	ch := s.chans.getChan(id)
+	if ch == nil {
+		return
+	}
+	ch.c <- msg
+}
+
+func (s *SFTP) mainLoop() {
+	defer s.Close()
+	for {
+		packet, err := s.readOnePacket()
+		if err != nil {
+			// TODO(ekg): what to do here and below?
+			break
+		}
+		msg, err := decodeSFTP(packet)
+		if err != nil {
+			break
+		}
+		switch msg := msg.(type) {
+		case fxpStatusResp:
+			s.dispatchMsg(msg, msg.ID)
+		case fxpHandleResp:
+			s.dispatchMsg(msg, msg.ID)
+		case fxpDataResp:
+			s.dispatchMsg(msg, msg.ID)
+		case fxpNameResp:
+			s.dispatchMsg(msg, msg.ID)
+		case fxpAttrsResp:
+			s.dispatchMsg(msg, msg.ID)
+		default:
+			break
+		}
+	}
+}
+
+// Decode a packet into its corresponding message.
+func decodeSFTP(packet []byte) (interface{}, error) {
+	var msg interface{}
+	switch packet[0] {
+	case fxpPacketVersion:
+		msg = new(fxpVersionMsg)
+	case fxpPacketStatus:
+		msg = new(fxpStatusResp)
+	case fxpPacketHandle:
+		msg = new(fxpHandleResp)
+	case fxpPacketData:
+		msg = new(fxpDataResp)
+	case fxpPacketName:
+		msg = new(fxpNameResp)
+	case fxpPacketAttrs:
+		msg = new(fxpAttrsResp)
+	case fxpPacketExtendedReply:
+		// TODO(ekg): support this packet type.
+		return nil, UnexpectedMessageError{fxpPacketExtendedReply, packet[0]}
+	default:
+		return nil, UnexpectedMessageError{0, packet[0]}
+	}
+	if err := unmarshal(msg, packet, packet[0]); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+func (s *SFTP) Stat(name string) (fi os.FileInfo, err error) {
+	fxpCh := s.chans.newChan()
+	defer s.chans.remove(fxpCh.ID)
+
+	req := fxpStatMsg{ID: fxpCh.ID, Path: name}
+	if err = s.writePacket(marshal(fxpPacketStat, req)); err != nil {
+		return
+	}
+
+	resp := fxpCh.waitForResponse()
+	switch msg := resp.(type) {
+	case fxpStatusResp:
+		fmt.Printf("%v", msg)
+	case fxpAttrsResp:
+		fmt.Printf("%v", msg)
+	default:
+		fmt.Printf("%v", msg)
+	}
+	return
+}

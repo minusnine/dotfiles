@@ -1,5 +1,5 @@
 export PATH=$HOME/bin:$HOME/.xmonad/scripts:$PATH
-. $HOME/custom/xsession
+# . $HOME/custom/xsession
 xsetroot -solid black &
 trayer --edge top --align right --SetDockType true --SetPartialStrut true --expand true --width 10 --height 12 --transparent true --tint 0x000000 &
 xscreensaver &

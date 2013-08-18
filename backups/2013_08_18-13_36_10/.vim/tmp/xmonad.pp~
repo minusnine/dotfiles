@@ -1,0 +1,33 @@
+class user::ekg::xmonad($homedir = '/home/ekg', $modmask) {
+    file {
+        "${homedir}/.xmonad/lib/ModKey.hs":
+            ensure  => present,
+            owner   => "ekg",
+            mode    => "644",
+            content => template("user/xmonad/lib/ModKey.hs");
+        "${homedir}/.xsession":
+            ensure => present,
+            source => "puppet:///modules/user/xsession";
+        "${homedir}/.xmonad":
+            ensure  => present,
+            source  => "puppet:///modules/user/xmonad",
+            recurse => "true";
+        "/usr/bin/gnome-screensaver-command":
+            ensure => link,
+            target => "/usr/bin/xscreensaver-command";
+        "/usr/bin/gnome-screensaver":
+            ensure => present,
+            mode   => "444";
+        "${homedir}/.xscreensaver":
+            ensure => "present",
+            source => "puppet:///modules/user/xscreensaver";
+    }
+
+    package {
+        "libghc6-xmonad-contrib-dev": ensure => present;
+        "trayer":         ensure => present;
+        "xmobar":         ensure => present;
+        "xmonad":         ensure => present;
+        "xscreensaver":   ensure => present;
+    }
+}

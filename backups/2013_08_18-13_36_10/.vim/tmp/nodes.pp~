@@ -1,0 +1,27 @@
+# Linode virtual machine.
+node 'li286-68' inherits default {
+    $sudo_lighttpd_admin_user = "lighttpd_admin"
+    include lighttpd,
+            lighttpd::administration,
+            ericgar_com_host,
+            user::ekg::base,
+            user::ekg::devel
+    fstab::home {"/home":
+        device => "/dev/xvdc"
+    }
+}
+
+node 'ekg-glaptop1' {
+    include
+        music,
+        user::ekg::base,
+        user::ekg::devel,
+        acpi
+
+    class { "user::ekg::xmonad":
+        modmask => "mod1Mask",
+ 	}
+ # gsettings set org.gnome.settings-daemon.plugins.power idle-dim-time 90
+}
+
+# import '../modules/work/nodes.pp'
