@@ -180,7 +180,7 @@ myKeys = [("M-b"                   , spawn "google-chrome"          ) -- open we
          , ("M-y"                   , spawn "xdotool type $(fetchotp)" ) -- fetch an otp over bluetooth and send it to the active window
          , ("M-S-y"                 , spawn "xdotool type $(fetchotp --account='LastPass-eric@ericgar.com')" )
          , ("M-d"                   , spawn "xrandr --auto"            ) -- reconfigure display.
-         , ("M-S-d"                 , spawn "/home/ekg/xranr-toggle"  ) -- reconfigure display smartly.
+         , ("M-S-d"                 , spawn "/home/ekg/bin/xranr-toggle"  ) -- reconfigure display smartly.
 
     ] where
         focusScreen n = screenWorkspace n >>= flip whenJust (windows . W.view)

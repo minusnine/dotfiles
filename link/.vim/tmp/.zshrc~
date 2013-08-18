@@ -1,11 +1,11 @@
 # Path to your oh-my-zsh configuration.
-ZSH=$HOME/src/mydotfiles/lib/oh-my-zsh
+ZSH=$HOME/.dotfiles/libs/oh-my-zsh
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
-ZSH_THEME="robbyrussell"
+ZSH_THEME="ekg/
 
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
@@ -45,3 +45,4 @@ plugins=(git tmux golang battery git-extras)
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
+SHELL=/usr/bin/zsh
