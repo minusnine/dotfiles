@@ -37,3 +37,5 @@ if [[ ! "$(type -P git-extras)" ]]; then
     sudo make install
   )
 fi
+
+git clone git://github.com/robbyrussell/oh-my-zsh.git /home/ekg/src/oh-my-zsh
