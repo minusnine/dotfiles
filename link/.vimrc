@@ -5,6 +5,7 @@ call vundle#rc()
 Bundle 'gmarik/vundle'
 Bundle 'scrooloose/syntastic'
 Bundle 'myusuf3/numbers.vim'
+Bundle 'flazz/vim-colorschemes'
 filetype plugin indent on
 
 set autoindent           " Preserve current indent on new lines

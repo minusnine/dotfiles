@@ -10,3 +10,6 @@
 [submodule "libs/vim-colorshemes"]
 	path = libs/vim-colorshemes
 	url = https://github.com/flazz/vim-colorschemes.git
+[submodule "link/.vim/bundle/vundle"]
+	path = link/.vim/bundle/vundle
+	url = https://github.com/gmarik/vundle.git
