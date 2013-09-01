@@ -199,3 +199,8 @@ bindkey "${key[End]}" end-of-line
 #
 bindkey "${key[PageUp]}" history-beginning-search-backward
 bindkey "${key[PageDown]}" history-beginning-search-forward
+
+if [ -d "$HOME/src/go" -a -x "$HOME/src/go/bin/go" ]; then
+  export GOROOT="$HOME/src/go"
+  export PATH="$PATH:$HOME/src/go/bin"
+fi
