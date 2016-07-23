@@ -1,6 +1,0 @@
-#include <stdio.h>
-
-int main() {
-  printf("%ull", sizeof(int));
-  return 0;
-}

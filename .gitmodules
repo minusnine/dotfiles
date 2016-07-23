@@ -1,15 +1,3 @@
-[submodule "libs/vundle"]
-	path = libs/vundle
-	url = https://github.com/gmarik/vundle.git
-[submodule "libs/oh-my-zsh"]
-	path = libs/oh-my-zsh
-	url = https://github.com/robbyrussell/oh-my-zsh.git
-[submodule "libs/vim-pathogen"]
-	path = libs/vim-pathogen
-	url = https://github.com/tpope/vim-pathogen.git
-[submodule "libs/vim-colorshemes"]
-	path = libs/vim-colorshemes
-	url = https://github.com/flazz/vim-colorschemes.git
 [submodule "link/.vim/bundle/vundle"]
 	path = link/.vim/bundle/vundle
 	url = https://github.com/gmarik/vundle.git
