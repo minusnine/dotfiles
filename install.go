@@ -45,8 +45,8 @@ var (
 		"git@github.com:minusnine/camlistore.git":       "/home/ekg/src/camlistore",
 		"https://github.com/tmux-plugins/tpm", "/home/ekg/.tmux/plugins/tpm",
 		// TODO(ekg): also compile this.
-		"https://github.com/tmux/tmux.git": "/home/ekg/src/tmux",
-		"https://go.googlesource.com/go":              "~/src/go",
+		"https://github.com/tmux/tmux.git":          "/home/ekg/src/tmux",
+		"https://go.googlesource.com/go":            "~/src/go",
 		"git@github.com:flazz/vim-colorschemes.git": "~/.vim/colors",
 	}
 
@@ -65,9 +65,9 @@ var (
 		"~/.vim",
 		"~/src",
 		"~/tmp/vim",
-
 	}
 )
+
 // Run sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 // https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 
@@ -83,6 +83,7 @@ func main() {
 	// font
 	// background
 	// dotfiles
+	// ln -sf .dotfiles/install.go ~/install.go
 }
 
 func dirs() {
