@@ -13,22 +13,27 @@ var (
 	packages = []string{
 		"automake",
 		"build-essential",
-		"git-core",
-		"gimp",
+		"build-essential",
+		"cmake",
 		"fonts-inconsolata",
+		"gimp",
+		"git-core",
 		"htop",
 		"id3tool",
 		"libevent-dev",
-		"libncurses5-dev",
 		"libgit2",
+		"libncurses5-dev",
 		"libssl-dev",
+		"mercurial",
+		"nodejs",
 		"mosh",
 		"nmap",
 		"powertop",
+		"python-dev",
+		"python-pip",
+		"python3-dev",
 		"sl",
 		"tree",
-		"mercurial",
-		"python-pip",
 		"xbacklight",
 		"xfce4-mixer", // for tray utilities only
 		"xfce4-power-manager",
@@ -51,7 +56,7 @@ var (
 	}
 
 	goPackages = []string{
-		"github.com/minusnine/taowm",
+		"github.com/minusnine/taowm", // be sure to install as well.
 		"github.com/tebeka/selenium",
 		"github.com/pkg/sftp",
 		"github.com/spf13/hugo",
@@ -142,4 +147,7 @@ func vim() {
 	// mkdir ~/tmp/vim
 	// install ~/.vimrc
 	// run  vim +PluginInstall +qall
+
+	// cd ~/.vim/bundle/YouCompleteMe
+	// ./install.py --gocode-completer --tern-completer  --racer-completer
 }
