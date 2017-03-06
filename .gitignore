@@ -1,6 +1,6 @@
-link/.vim/bundle
-link/.vim/tmp/*
-link/.ssh/id_rsa
-link/.ssh/known_hosts
-link/.xmonad/xmonad-x86_64-linux
-link/.xmonad/xmonad.errors
+data/.vim/bundle
+data/.vim/tmp/*
+data/.ssh/id_rsa
+data/.ssh/known_hosts
+data/.xmonad/xmonad-x86_64-linux
+data/.xmonad/xmonad.errors

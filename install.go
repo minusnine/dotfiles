@@ -140,6 +140,5 @@ func vim() {
 
 	// mkdir ~/tmp/vim
 	// install ~/.vimrc
-	// clone vundle
 	// run  vim +PluginInstall +qall
 }
