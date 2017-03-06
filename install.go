@@ -56,7 +56,7 @@ var (
 	}
 
 	goPackages = []string{
-		"github.com/minusnine/taowm", // be sure to install as well.
+		"github.com/minusnine/taowm", // be sure to install as well and checkout the right branch
 		"github.com/tebeka/selenium",
 		"github.com/pkg/sftp",
 		"github.com/spf13/hugo",
