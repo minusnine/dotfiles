@@ -5,7 +5,7 @@ ZSH=$HOME/src/oh-my-zsh
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
-ZSH_THEME="ekg"
+ZSH_THEME="bira"
 
 # Set to this to use case-sensitive completion
 # CASE_SENSITIVE="true"
@@ -198,5 +198,11 @@ bindkey "${key[PageDown]}" history-beginning-search-forward
 
 if [ -d "$HOME/src/go" -a -x "$HOME/src/go/bin/go" ]; then
   export GOROOT="$HOME/src/go"
-  export PATH="$PATH:$HOME/src/go/bin"
+  export PATH="$PATH:$GOROOT/bin"
 fi
+
+# The next line updates PATH for the Google Cloud SDK.
+source '/home/ekg/src/google-cloud-sdk/path.zsh.inc'
+
+# The next line enables shell command completion for gcloud.
+source '/home/ekg/src/google-cloud-sdk/completion.zsh.inc'

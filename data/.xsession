@@ -1,16 +1,9 @@
-export PATH=$HOME/bin:$HOME/.xmonad/scripts:$PATH
-# . $HOME/custom/xsession
 xsetroot -solid black &
-trayer --edge top --align right --SetDockType true --SetPartialStrut true --expand true --width 10 --height 12 --transparent true --tint 0x000000 &
-xscreensaver &
+gnome-screensaver &
 setxkbmap -option terminate:ctrl_alt_bksp &
 nm-applet --sm-disable &
-bluetooth-applet &
-urxvtd &
-eval `gnome-keyring-daemon -s`
-google-chrome &
-autocutsel &
-autocutsel -s PRIMARY &
+eval `ssh-agent`
 xmodmap $HOME/.xmodmaprc
-syndaemon -d -i 1 -k
-exec xmonad
+google-chrome &
+gnome-terminal --hide-menubar -e "tmux attach -d -t 0 || tmux new -t 0"
+/home/ekg/go/bin/taowm

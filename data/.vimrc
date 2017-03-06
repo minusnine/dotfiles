@@ -1,8 +1,9 @@
 set nocompatible               " be iMproved
 filetype off                   " required!
 set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#rc()
+call vundle#begin()
 Bundle 'VundleVim/Vundle.vim'
+Bundle 'gmarik/vundle'
 Bundle 'scrooloose/syntastic'
 Bundle 'myusuf3/numbers.vim'
 Bundle 'flazz/vim-colorschemes'

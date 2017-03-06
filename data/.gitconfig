@@ -1,6 +1,6 @@
 [user]
   name = Eric Garrido
-  email = eric@ericgar.com
+  email = ekg@google.com
 [color]
   diff = true
   status = true
@@ -9,3 +9,14 @@
   path = custom/gitconfig
 [rerere]
   enabled = 1
+[http]
+	cookiefile = /home/ekg/.gitcookies
+[alias]
+  change = codereview change
+  gofmt = codereview gofmt
+  mail = codereview mail
+  pending = codereview pending
+  submit = codereview submit
+  sync = codereview sync
+[push]
+	default = simple
