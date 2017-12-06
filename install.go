@@ -16,8 +16,9 @@ var (
 		"build-essential",
 		"cmake",
 		"fonts-inconsolata",
+		"gcc",
 		"gimp",
-		"git-core",
+		"git",
 		"htop",
 		"id3tool",
 		"libevent-dev",
@@ -32,12 +33,21 @@ var (
 		"python-dev",
 		"python-pip",
 		"python3-dev",
+		"rofi",
 		"sl",
+		"subversion",
+		"apt-transport-https",
+		"dnsutils",
+		"libusb-1.0.0-dev",
+		"unzip",
+		"zip",
+		"parallel",
+		"xserver-xorg-input-synaptics",
 		"tree",
 		"xbacklight",
 		"xfce4-mixer", // for tray utilities only
 		"xfce4-power-manager",
-		"xscreensaver",
+		"cinnamon-screensaver",
 	}
 
 	removePackages = []string{
@@ -57,7 +67,6 @@ var (
 	}
 
 	goPackages = []string{
-		"github.com/minusnine/taowm", // be sure to install as well and checkout the right branch
 		"github.com/tebeka/selenium",
 		"github.com/pkg/sftp",
 		"github.com/spf13/hugo",
@@ -90,6 +99,7 @@ func main() {
 	// background
 	// dotfiles
 	// ln -sf .dotfiles/install.go ~/install.go
+	// curl https://sh.rustup.rs -sSf | sh
 }
 
 func dirs() {
