@@ -39,6 +39,7 @@ var (
 		"xfce4-power-manager",
 		"xscreensaver",
 	}
+
 	removePackages = []string{
 		"command-not-found",
 	}

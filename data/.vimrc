@@ -39,6 +39,11 @@ let g:go_fmt_command = "goimports"
 let g:ycm_python_binary_path = '/usr/bin/python3'
 let g:ycm_server_python_interpreter = '/usr/bin/python'
 
+" Close the preview window after insert mode is left.
+"
+" https://github.com/Valloric/YouCompleteMe#the-gycm_add_preview_to_completeopt-option
+let g:ycm_autoclose_preview_window_after_insertion = 1
+
 " Remember the last position in the file.
 if has("autocmd")
     au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
