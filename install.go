@@ -100,6 +100,10 @@ func main() {
 	// dotfiles
 	// ln -sf .dotfiles/install.go ~/install.go
 	// curl https://sh.rustup.rs -sSf | sh
+	// mkdir ~/opt
+	// cd src/tmux
+	// sh autogen.sh
+	// ./configure --prefix=/home/eric/opt && make
 }
 
 func dirs() {
