@@ -1,4 +1,8 @@
+! Make the caps lock key an escape key.
 clear Lock
 keycode 66 = Escape
 keycode 9 = Escape
 
+! Make only the left Alt key the mod key.
+remove Mod1 = Alt_L
+add Mod3 = Alt_L
