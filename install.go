@@ -19,6 +19,8 @@ var (
 		"gimp",
 		"git-core",
 		"htop",
+		"i3",
+		"i3lock",
 		"id3tool",
 		"libevent-dev",
 		"libgit2",
@@ -37,7 +39,7 @@ var (
 		"xbacklight",
 		"xfce4-mixer", // for tray utilities only
 		"xfce4-power-manager",
-		"xscreensaver",
+		"xsslock",
 	}
 
 	removePackages = []string{
