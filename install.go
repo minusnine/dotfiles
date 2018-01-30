@@ -1,12 +1,15 @@
 package main
 
 import (
+	"flag"
 	"os"
+	"os/exec"
 	"os/user"
+	"path/filepath"
+	"strings"
 
 	log "github.com/golang/glog"
 	"github.com/juju/utils/packaging/manager"
-	git "github.com/libgit2/git2go"
 )
 
 var (
@@ -24,7 +27,7 @@ var (
 		"i3lock",
 		"id3tool",
 		"libevent-dev",
-		"libgit2",
+		"libgit2-dev",
 		"libncurses5-dev",
 		"libssl-dev",
 		"mercurial",
@@ -39,6 +42,7 @@ var (
 		"sl",
 		"subversion",
 		"apt-transport-https",
+		"tmux",
 		"dnsutils",
 		"libusb-1.0.0-dev",
 		"unzip",
@@ -47,9 +51,9 @@ var (
 		"xserver-xorg-input-synaptics",
 		"tree",
 		"xbacklight",
-		"xfce4-mixer", // for tray utilities only
+		"xfce4-pulseaudio-plugin",
 		"xfce4-power-manager",
-		"xsslock",
+		"xss-lock",
 	}
 
 	removePackages = []string{
@@ -57,15 +61,12 @@ var (
 	}
 
 	gitRepos = map[string]string{
-		"https://github.com/gmarik/Vundle.vim.git":      "/home/ekg/.vim/bundle/Vundle.vim",
-		"https://github.com/robbyrussell/oh-my-zsh.git": "/home/ekg/src/oh-my-zsh",
-		"https://github.com/minusnine/ericgar.com.git":  "/home/ekg/src/ericgar.com",
-		"git@github.com:minusnine/camlistore.git":       "/home/ekg/src/camlistore",
-		"https://github.com/tmux-plugins/tpm", "/home/ekg/.tmux/plugins/tpm",
-		// TODO(ekg): also compile this.
-		"https://github.com/tmux/tmux.git":          "/home/ekg/src/tmux",
-		"https://go.googlesource.com/go":            "~/src/go",
-		"git@github.com:flazz/vim-colorschemes.git": "~/.vim/colors",
+		"https://github.com/gmarik/Vundle.vim.git":      "~/.vim/bundle/Vundle.vim",
+		"https://github.com/robbyrussell/oh-my-zsh.git": "~/src/oh-my-zsh",
+		"https://github.com/minusnine/ericgar.com.git":  "~/src/ericgar.com",
+		"https://github.com/tmux-plugins/tpm":           "~/.tmux/plugins/tpm",
+		"https://go.googlesource.com/go":                "~/src/go",
+		"https://github.com/flazz/vim-colorschemes.git": "~/.vim/colors",
 	}
 
 	goPackages = []string{
@@ -75,26 +76,27 @@ var (
 	}
 
 	dirs = []string{
-		"src",
-		".vim",
-		"tmp/vim",
-		"~/.ssh",
 		"~/.vim",
+		"~/.vim/tmp",
+		"~/.ssh",
 		"~/src",
-		"~/tmp/vim",
 	}
 )
 
-// Run sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
-
 func main() {
-	packages()
-	dirs()
-	gitRepos()
-	vim()
+	flag.Parse()
+	if isRoot {
+		managePackages()
+		return
+	}
+	log.Infof("Re-run as root to install packages.")
+	makeDirs()
+	cloneGitRepos()
+	setupVim()
 
 	// TODO(ekg):
+	// Run sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+	// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 	// sudo pip install Pygments
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
@@ -108,24 +110,36 @@ func main() {
 	// ./configure --prefix=/home/eric/opt && make
 }
 
-func dirs() {
+func makeDirs() {
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir); err != nil {
+		dir = expandDir(dir)
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v: %v", dir, err)
 		}
 	}
 }
 
-func packages() {
-	apt := manager.NewAptPackageManager()
+var isRoot bool
+var homeDir string
 
-	var isRoot bool
+func init() {
 	u, err := user.Current()
 	if err != nil {
-		log.Errorf("Error getting current user: %v", err)
-	} else if u.Name == "root" {
+		log.Exitf("Error getting current user: %v", err)
+	}
+	if u.Name == "root" {
 		isRoot = true
 	}
+	homeDir = u.HomeDir
+}
+
+func expandDir(d string) string {
+	return strings.Replace(d, "~", homeDir, 1)
+}
+
+func managePackages() {
+	apt := manager.NewAptPackageManager()
+
 	for _, pkg := range packages {
 		if apt.IsInstalled(pkg) {
 			log.Infof("Package %v already installed", pkg)
@@ -144,27 +158,33 @@ func packages() {
 	}
 }
 
-func gitRepos() {
+func cloneGitRepos() {
 	for repo, dir := range gitRepos {
-		if err := os.MkdirAll(dir); err != nil {
+		dir = expandDir(dir)
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v for repository %v: %v", dir, repo, err)
 			continue
 		}
+		if f, err := os.Open(filepath.Join(dir, ".git")); err == nil {
+			f.Close()
+			log.Infof("Repository %v already cloned into %v, skipping", repo, dir)
+			continue
 
-		if _, err := git.Clone(repo, dir, nil); err != nil {
+		}
+		if err := exec.Command("git", "clone", repo, dir).Run(); err != nil {
 			log.Errorf("Error cloning repository %v into %v: %v", repo, dir, err)
 			continue
 		}
 		log.Infof("Cloned repository %v into %v", repo, dir)
 	}
+	// cd ~/.vim
+	// git submodule add -f https://github.com/flazz/vim-colorschemes.git bundle/colorschemes
 }
 
-func vim() {
-
+func setupVim() {
 	// mkdir ~/tmp/vim
-	// install ~/.vimrc
+	// Copy ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
 	// run  vim +PluginInstall +qall
-
 	// cd ~/.vim/bundle/YouCompleteMe
 	// ./install.py --gocode-completer --tern-completer  --racer-completer
 }
