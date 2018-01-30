@@ -16,8 +16,9 @@ var (
 		"build-essential",
 		"cmake",
 		"fonts-inconsolata",
+		"gcc",
 		"gimp",
-		"git-core",
+		"git",
 		"htop",
 		"i3",
 		"i3lock",
@@ -34,7 +35,16 @@ var (
 		"python-dev",
 		"python-pip",
 		"python3-dev",
+		"rofi",
 		"sl",
+		"subversion",
+		"apt-transport-https",
+		"dnsutils",
+		"libusb-1.0.0-dev",
+		"unzip",
+		"zip",
+		"parallel",
+		"xserver-xorg-input-synaptics",
 		"tree",
 		"xbacklight",
 		"xfce4-mixer", // for tray utilities only
@@ -59,7 +69,6 @@ var (
 	}
 
 	goPackages = []string{
-		"github.com/minusnine/taowm", // be sure to install as well and checkout the right branch
 		"github.com/tebeka/selenium",
 		"github.com/pkg/sftp",
 		"github.com/spf13/hugo",
@@ -92,6 +101,11 @@ func main() {
 	// background
 	// dotfiles
 	// ln -sf .dotfiles/install.go ~/install.go
+	// curl https://sh.rustup.rs -sSf | sh
+	// mkdir ~/opt
+	// cd src/tmux
+	// sh autogen.sh
+	// ./configure --prefix=/home/eric/opt && make
 }
 
 func dirs() {
