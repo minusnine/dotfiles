@@ -14,10 +14,11 @@ import (
 
 var (
 	packages = []string{
+		"apt-transport-https",
 		"automake",
 		"build-essential",
-		"build-essential",
 		"cmake",
+		"dnsutils",
 		"fonts-inconsolata",
 		"gcc",
 		"gimp",
@@ -30,30 +31,29 @@ var (
 		"libgit2-dev",
 		"libncurses5-dev",
 		"libssl-dev",
+		"libusb-1.0.0-dev",
 		"mercurial",
-		"nodejs",
 		"mosh",
 		"nmap",
+		"nodejs",
+		"parallel",
 		"powertop",
+		"python3-dev",
 		"python-dev",
 		"python-pip",
-		"python3-dev",
 		"rofi",
 		"sl",
 		"subversion",
-		"apt-transport-https",
 		"tmux",
-		"dnsutils",
-		"libusb-1.0.0-dev",
-		"unzip",
-		"zip",
-		"parallel",
-		"xserver-xorg-input-synaptics",
 		"tree",
+		"unzip",
+		"weechat-curses",
 		"xbacklight",
-		"xfce4-pulseaudio-plugin",
 		"xfce4-power-manager",
+		"xfce4-pulseaudio-plugin",
+		"xserver-xorg-input-synaptics",
 		"xss-lock",
+		"zip",
 	}
 
 	removePackages = []string{
@@ -67,6 +67,7 @@ var (
 		"https://github.com/tmux-plugins/tpm":           "~/.tmux/plugins/tpm",
 		"https://go.googlesource.com/go":                "~/src/go",
 		"https://github.com/flazz/vim-colorschemes.git": "~/.vim/colors",
+		"https://github.com/myusuf3/numbers.vim.git":    "~/.vim/bundle/numbers",
 	}
 
 	goPackages = []string{
