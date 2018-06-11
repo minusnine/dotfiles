@@ -1,8 +1,8 @@
 ! Apply changes to this file via: xrdb ~/.Xresources
 
 ! Make the default font bigger and nicer.
-URxvt.font:     xft:Monospace:size=10:antialias=true
-URxvt.boldFont: xft:Monospace:bold:size=10:antialias=true
+URxvt.font:     xft:Go Mono:size=10:antialias=true
+URxvt.boldFont: xft:Go Mono:bold:size=10:antialias=true
 URxvt.allow_bold: true
 
 ! font-size: Bind Ctrl++ and Ctrl+- to change the font size. See
@@ -37,7 +37,7 @@ URxvt.foreground: gray
 !! Tango Colors
 !
 !! black dark/light
-URxvt.color0: #171A1B
+URxvt.color0: #000000
 URxvt.color8: #555753
 
 !! red dark/light

@@ -20,6 +20,7 @@ var (
 		"cmake",
 		"dnsutils",
 		"fonts-inconsolata",
+		"fonts-go",
 		"gcc",
 		"gimp",
 		"git",
