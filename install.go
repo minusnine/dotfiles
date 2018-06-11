@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	log "github.com/golang/glog"
-	"github.com/juju/utils/packaging/manager"
+	"github.com/juju/packaging/manager"
 )
 
 var (
@@ -85,6 +85,12 @@ var (
 )
 
 func main() {
+	// mkdir ~/src
+	// git clone git@github.com:minusnine/dotfiles.git ~/src/dotfiles
+	// go get .
+	// go run install.go --alsologtostderr
+	// sudo go GOPATH=/home/ekg/go run install.go --alsologtostderr
+
 	flag.Parse()
 	if isRoot {
 		managePackages()
@@ -102,13 +108,16 @@ func main() {
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
-	// dotfiles
-	// ln -sf .dotfiles/install.go ~/install.go
+	// for i in ~/src/dotfiles/data/.* ; do ln -sf $i ~/$(basename $i) ; done
+	// mkdir -p ~/.urxvt/ext
+	// curl -fsSL https://raw.githubusercontent.com/majutsushi/urxvt-font-size/master/font-size > ~/.urxvt/ext/font-size
 	// curl https://sh.rustup.rs -sSf | sh
 	// mkdir ~/opt
 	// cd src/tmux
 	// sh autogen.sh
 	// ./configure --prefix=/home/eric/opt && make
+	// rm -rf Desktop Documents Downloads Music Pictures Public Templates/ Videos
+
 }
 
 func makeDirs() {
@@ -183,8 +192,9 @@ func cloneGitRepos() {
 }
 
 func setupVim() {
-	// mkdir ~/tmp/vim
-	// Copy ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
+	// mkdir -p ~/tmp/vim
+	// mkdir -p ~/.vim/autoload
+	// curl https://raw.githubusercontent.com/tpope/vim-pathogen/master/autoload/pathogen.vim -sSf > ~/.vim/autoload/pathogen.vim
 	// run  vim +PluginInstall +qall
 	// cd ~/.vim/bundle/YouCompleteMe
 	// ./install.py --gocode-completer --tern-completer  --racer-completer

@@ -1,0 +1,69 @@
+! Apply changes to this file via: xrdb ~/.Xresources
+
+! Make the default font bigger and nicer.
+URxvt.font:     xft:Monospace:size=10:antialias=true
+URxvt.boldFont: xft:Monospace:bold:size=10:antialias=true
+URxvt.allow_bold: true
+
+! font-size: Bind Ctrl++ and Ctrl+- to change the font size. See
+! https://github.com/majutsushi/urxvt-font-size
+URxvt.perl-ext-common: default,matcher,selection-to-clipboard,font-size
+
+! scale fonts
+URxvt.keysym.C-S-plus: font-size:increase
+URxvt.keysym.C-KP_Add: font-size:increase
+URxvt.keysym.C-S-underscore: font-size:decrease
+URxvt.keysym.C-KP_Subtract: font-size:decrease
+URxvt.keysym.C-0: font-size:reset
+URxvt.keysym.C-KP_0: font-size:reset
+
+! Disable special modes that I don't use, since I don't insert Unicode
+! characters.
+URxvt.iso14755: false
+URxvt.iso14755_52: false
+
+! Theme/Colors
+! ============
+
+URxvt.fading: 0
+
+URxvt.cursorColor: #AAAAAA
+URxvt.cursorBlink: 1
+URxvt.cursorUnderline: 1
+
+URxvt.background: black
+URxvt.foreground: gray
+
+!! Tango Colors
+!
+!! black dark/light
+URxvt.color0: #171A1B
+URxvt.color8: #555753
+
+!! red dark/light
+URxvt.color1: #CC0000
+URxvt.color9: #FF0000
+
+!! green dark/light
+URxvt.color2: #00DD00
+URxvt.color10: #00FF00
+
+!! yellow dark/light
+URxvt.color3: #DDDD00
+URxvt.color11: #FFFF00
+
+!! blue dark/light
+URxvt.color4: #8888FF
+URxvt.color12: #AAAAFF
+
+!! magenta dark/light
+URxvt.color5: #75507B
+URxvt.color13: #AD7FA8
+
+!! cyan dark/light
+URxvt.color6: #06989A
+URxvt.color14: #34E2E2
+
+!! white dark/light
+URxvt.color7: #D3D7CF
+URxvt.color15: #EEEEEC
