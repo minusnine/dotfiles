@@ -65,9 +65,13 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
+export EDITOR=vim
+
 if [[ -r ~/.custom/zshrc ]]; then
         source ~/.custom/zshrc
 fi
 
 # Allow globs that do not find files, e.g. --test_filter=*ForceHandleResetCfsro*
 setopt +o nomatch
+
+export PATH="$PATH:$HOME/bin"

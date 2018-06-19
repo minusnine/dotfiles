@@ -62,13 +62,14 @@ var (
 	}
 
 	gitRepos = map[string]string{
-		"https://github.com/gmarik/Vundle.vim.git":      "~/.vim/bundle/Vundle.vim",
-		"https://github.com/robbyrussell/oh-my-zsh.git": "~/src/oh-my-zsh",
-		"https://github.com/minusnine/ericgar.com.git":  "~/src/ericgar.com",
-		"https://github.com/tmux-plugins/tpm":           "~/.tmux/plugins/tpm",
-		"https://go.googlesource.com/go":                "~/src/go",
-		"https://github.com/flazz/vim-colorschemes.git": "~/.vim/colors",
-		"https://github.com/myusuf3/numbers.vim.git":    "~/.vim/bundle/numbers",
+		"https://github.com/gmarik/Vundle.vim.git":       "~/.vim/bundle/Vundle.vim",
+		"https://github.com/robbyrussell/oh-my-zsh.git":  "~/src/oh-my-zsh",
+		"https://github.com/minusnine/ericgar.com.git":   "~/src/ericgar.com",
+		"https://github.com/tmux-plugins/tpm":            "~/.tmux/plugins/tpm",
+		"https://go.googlesource.com/go":                 "~/src/go",
+		"https://github.com/flazz/vim-colorschemes.git":  "~/.vim/colors",
+		"https://github.com/myusuf3/numbers.vim.git":     "~/.vim/bundle/numbers",
+		"https://github.com/vim-syntastic/syntastic.git": "~/.vim/bundle/syntastic",
 	}
 
 	goPackages = []string{
@@ -82,6 +83,7 @@ var (
 		"~/.vim/tmp",
 		"~/.ssh",
 		"~/src",
+		"~/bin",
 	}
 )
 
@@ -199,4 +201,5 @@ func setupVim() {
 	// run  vim +PluginInstall +qall
 	// cd ~/.vim/bundle/YouCompleteMe
 	// ./install.py --gocode-completer --tern-completer  --racer-completer
+	// curl -fsSL https://www.vim.org/scripts/download_script.php?src_id=11430 > ~/.vim/colors/colors/tir_black.vim
 }
