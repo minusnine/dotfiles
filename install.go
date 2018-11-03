@@ -67,7 +67,6 @@ var (
 		"https://github.com/minusnine/ericgar.com.git":   "~/src/ericgar.com",
 		"https://github.com/tmux-plugins/tpm":            "~/.tmux/plugins/tpm",
 		"https://go.googlesource.com/go":                 "~/src/go",
-		"https://github.com/flazz/vim-colorschemes.git":  "~/.vim/colors",
 		"https://github.com/myusuf3/numbers.vim.git":     "~/.vim/bundle/numbers",
 		"https://github.com/vim-syntastic/syntastic.git": "~/.vim/bundle/syntastic",
 	}
@@ -80,7 +79,9 @@ var (
 
 	dirs = []string{
 		"~/.vim",
-		"~/.vim/tmp",
+		"~/.vim",
+		"~/tmp",
+		"~/tmp/vim",
 		"~/.ssh",
 		"~/src",
 		"~/bin",
@@ -88,12 +89,6 @@ var (
 )
 
 func main() {
-	// mkdir ~/src
-	// git clone git@github.com:minusnine/dotfiles.git ~/src/dotfiles
-	// go get .
-	// go run install.go --alsologtostderr
-	// sudo go GOPATH=/home/ekg/go run install.go --alsologtostderr
-
 	flag.Parse()
 	if isRoot {
 		managePackages()
@@ -120,6 +115,7 @@ func main() {
 	// sh autogen.sh
 	// ./configure --prefix=/home/eric/opt && make
 	// rm -rf Desktop Documents Downloads Music Pictures Public Templates/ Videos
+	// ssh-keygen
 
 }
 
