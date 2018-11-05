@@ -1,3 +1,4 @@
+dotfiles
 data/.vim/bundle
 data/.vim/tmp/*
 data/.ssh/id_rsa*

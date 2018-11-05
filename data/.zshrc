@@ -2,7 +2,7 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
-export ZSH=/usr/local/google/home/ekg/.oh-my-zsh
+export ZSH=$HOME/.oh-my-zsh
 
 # Set name of the theme to load. Optionally, if you set this to "random"
 # it'll load a random theme each time that oh-my-zsh is loaded.
@@ -74,4 +74,4 @@ fi
 # Allow globs that do not find files, e.g. --test_filter=*ForceHandleResetCfsro*
 setopt +o nomatch
 
-export PATH="$PATH:$HOME/bin"
+export PATH="$HOME/bin:$HOME/go/bin:$PATH"
