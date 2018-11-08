@@ -27,5 +27,5 @@ fi
 PATH="${HOME}/go/bin:${PATH}"
 cd $DOTFILES_DIR
 go get -t ./...
-go run ${DOTFILES_DIR}/install.go --alsologtostderr
 sudo GOPATH=/home/ekg/go go run ${DOTFILES_DIR}/install.go --alsologtostderr
+go run ${DOTFILES_DIR}/install.go --alsologtostderr

@@ -36,10 +36,10 @@ var (
 		"libncurses5-dev",
 		"libssl-dev",
 		"libusb-1.0.0-dev",
+		"man-db",
 		"mercurial",
 		"mosh",
 		"nmap",
-		"nodejs",
 		"parallel",
 		"powertop",
 		"python3-dev",
@@ -51,6 +51,7 @@ var (
 		"tmux",
 		"tree",
 		"unzip",
+		"vim-nox",  // provides vim with python support
 		"weechat-curses",
 		"xbacklight",
 		"xfce4-power-manager",
@@ -73,6 +74,7 @@ var (
 		"https://go.googlesource.com/go":                 "~/src/go",
 		"https://github.com/myusuf3/numbers.vim.git":     "~/.vim/bundle/numbers",
 		"https://github.com/vim-syntastic/syntastic.git": "~/.vim/bundle/syntastic",
+		"https://github.com/tmux/tmux.git": "~/src/tmux",
 	}
 
 	goPackages = []string{
@@ -91,6 +93,7 @@ var (
 		"~/bin",
 		"~/.urxvt",
 		"~/.urxvt/ext",
+		"~/opt",
 	}
 
 	removeDirs = []string{
@@ -135,22 +138,59 @@ func main() {
 	installRust()
 	createSSHKey()
 	setupUrxvt()
+	installTmux()
 
 	// TODO(ekg):
 	// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
+}
 
-	// Install a recent tmux:
-	// mkdir ~/opt
-	// cd src/tmux
-	// sh autogen.sh
-	// ./configure --prefix=/home/eric/opt && make
+func installTmux() {
+	if _, err := os.Stat(expandPath("~/opt/bin/tmux")); !os.IsNotExist(err) {
+		log.V(1).Infof("~/opt/bin/tmux already exists, skipping build.")
+		return
+	}
+	cmd := exec.Command("sh", "autogen.sh")
+	cmd.Dir = expandPath("~/src/tmux")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux autogen.sh: %s", err)
+		return
+	}
+
+	cmd = exec.Command("./configure", "--prefix="+expandPath("~/opt"))
+	cmd.Dir = expandPath("~/src/tmux")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux configure: %s", err)
+		return
+	}
+
+	cmd = exec.Command("make")
+	cmd.Dir = expandPath("~/src/tmux")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux make: %s", err)
+		return
+	}
+
+	cmd = exec.Command("make", "install")
+	cmd.Dir = expandPath("~/src/tmux")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux make install: %s", err)
+		return
+	}
 }
 
 func setupUrxvt() {
-	path := expandDir("~/.urxvt/ext/font-size")
+	path := expandPath("~/.urxvt/ext/font-size")
 	if _, err := os.Stat(path); err == nil {
 		return
 	}
@@ -167,14 +207,14 @@ func setupUrxvt() {
 }
 
 func installDotFiles() {
-	baseDir := expandDir("~/go/src/github.com/minusnine/dotfiles/data")
+	baseDir := expandPath("~/go/src/github.com/minusnine/dotfiles/data")
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Errorf("Error walking path %s: %s", path, err)
 			return nil
 		}
 		suffixPath := strings.TrimPrefix(path, baseDir)
-		target := expandDir("~"+suffixPath)
+		target := expandPath("~"+suffixPath)
 
 		if info.IsDir() {
 			s, err := os.Stat(target)
@@ -215,7 +255,7 @@ func installDotFiles() {
 }
 
 func createSSHKey() {
-	if _, err := os.Stat(expandDir("~/.ssh/id_rsa")); err == nil {
+	if _, err := os.Stat(expandPath("~/.ssh/id_rsa")); err == nil {
 		return
 	}
 	cmd := exec.Command("ssh-keygen")
@@ -253,7 +293,7 @@ func installRust() {
 	if _, err := exec.LookPath("rust"); err == nil {
 		return
 	}
-	if _, err := os.Stat(expandDir("~/.cargo/bin/rustc")); err == nil {
+	if _, err := os.Stat(expandPath("~/.cargo/bin/rustc")); err == nil {
 		return
 	}
 
@@ -271,7 +311,7 @@ func installRust() {
 
 func removeDefaultDirs() {
 	for _, dir := range removeDirs {
-		dir = expandDir(dir)
+		dir = expandPath(dir)
 		if _, err := os.Stat(dir); err != nil {
 			if !os.IsNotExist(err) {
 				log.V(1).Infof("Error stat'ing directory %s: %s", dir, err)
@@ -286,14 +326,14 @@ func removeDefaultDirs() {
 
 func makeDirs() {
 	for _, dir := range dirs {
-		dir = expandDir(dir)
+		dir = expandPath(dir)
 		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v: %v", dir, err)
 		}
 	}
 }
 
-func expandDir(d string) string {
+func expandPath(d string) string {
 	return strings.Replace(d, "~", homeDir, 1)
 }
 
@@ -316,11 +356,13 @@ func managePackages() {
 			log.Warningf("Skipping package installation for %v", pkg)
 		}
 	}
+
+	installNode()
 }
 
 func cloneGitRepos() {
 	for repo, dir := range gitRepos {
-		dir = expandDir(dir)
+		dir = expandPath(dir)
 		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v for repository %v: %v", dir, repo, err)
 			continue
@@ -340,7 +382,7 @@ func cloneGitRepos() {
 }
 
 func downloadPathogen() {
-	path := expandDir("~/.vim/autoload/pathogen.vim")
+	path := expandPath("~/.vim/autoload/pathogen.vim")
 	if _, err := os.Stat(path); err == nil {
 		return
 	} else if !os.IsNotExist(err) {
@@ -367,10 +409,50 @@ func installPlugins() {
 	}
 }
 
+func installNode() {
+	apt := manager.NewAptPackageManager()
+	const pkg = "nodejs"
+	if apt.IsInstalled(pkg) {
+		log.V(1).Infof("Package %v already installed", pkg)
+		return
+	}
+
+	script, err := downloadScript("https://deb.nodesource.com/setup_11.x")
+	if err != nil {
+		log.Errorf("Error downloading node repository creation script: %s", err)
+		return
+	}
+	if err := runScript(script); err != nil {
+		log.Errorf("Error installing node repository: %s", err)
+	}
+
+	log.Warningf("Package %v is not installed", pkg)
+	if !isRoot {
+		return
+	}
+	if err := apt.Install(pkg); err != nil {
+		log.Errorf("Error installing package %q: %s", pkg, err)
+		return
+	}
+	log.Infof("Installed package %v", pkg)
+}
+
+func installYCM() {
+	if _, err := os.Stat(expandPath("~/.vim/bundle/YouCompleteMe/third_party/ycmd/ycm_core.so")); !os.IsNotExist(err) {
+		log.V(1).Info("YouCompleteMe already installed")
+		return
+	}
+	cmd := exec.Command(expandPath("~/.vim/bundle/YouCompleteMe/install.py"), "--gocode-completer", "--tern-completer", "--racer-completer")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error installing Vim plugins: %s", err)
+	}
+}
+
 func setupVim() {
 	downloadPathogen()
-	// installPlugins()
 
-	// cd ~/.vim/bundle/YouCompleteMe
-	// ./install.py --gocode-completer --tern-completer  --racer-completer
+	installYCM()
+	// installPlugins()
 }
