@@ -74,4 +74,4 @@ fi
 # Allow globs that do not find files, e.g. --test_filter=*ForceHandleResetCfsro*
 setopt +o nomatch
 
-export PATH="$HOME/bin:$HOME/go/bin:$HOME/opt/bin:$PATH"
+export PATH="$HOME/bin:$HOME/go/bin:$HOME/src/go/bin:$HOME/opt/bin:$HOME/.cargo/bin:$PATH"

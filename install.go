@@ -133,9 +133,9 @@ func main() {
 	makeDirs()
 	cloneGitRepos()
 	installDotFiles()
+	installRust() // must happen before setupVim
 	setupVim()
 	removeDefaultDirs()
-	installRust()
 	createSSHKey()
 	setupUrxvt()
 	installTmux()
@@ -255,10 +255,11 @@ func installDotFiles() {
 }
 
 func createSSHKey() {
-	if _, err := os.Stat(expandPath("~/.ssh/id_rsa")); err == nil {
+	path := expandPath("~/.ssh/id_rsa")
+	if _, err := os.Stat(path); err == nil {
 		return
 	}
-	cmd := exec.Command("ssh-keygen")
+	cmd := exec.Command("ssh-keygen", "-f", path)
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
@@ -305,6 +306,10 @@ func installRust() {
 
 	if err := runScript(script); err != nil {
 		log.Errorf("Error installing Rust: %s", err)
+	}
+
+	if _, err := exec.LookPath("rust"); err != nil {
+		log.Error("Error instaling Rust: rust is not in $PATH after installation.")
 	}
 	return
 }
@@ -400,8 +405,8 @@ func downloadPathogen() {
 	}
 }
 
-func installPlugins() {
-	cmd := exec.Command("vim", "+PluginInstall", "+qall")
+func installVimPlugins() {
+	cmd := exec.Command("vim", "+PluginInstall", "+qall", "-i", "NONE", "-o", "-")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
@@ -453,6 +458,6 @@ func installYCM() {
 func setupVim() {
 	downloadPathogen()
 
+	installVimPlugins()  // must happen before installYCM
 	installYCM()
-	// installPlugins()
 }
