@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -51,7 +51,7 @@ var (
 		"tmux",
 		"tree",
 		"unzip",
-		"vim-nox",  // provides vim with python support
+		"vim-nox", // provides vim with python support
 		"weechat-curses",
 		"xbacklight",
 		"xfce4-power-manager",
@@ -74,13 +74,14 @@ var (
 		"https://go.googlesource.com/go":                 "~/src/go",
 		"https://github.com/myusuf3/numbers.vim.git":     "~/.vim/bundle/numbers",
 		"https://github.com/vim-syntastic/syntastic.git": "~/.vim/bundle/syntastic",
-		"https://github.com/tmux/tmux.git": "~/src/tmux",
+		"https://github.com/tmux/tmux.git":               "~/src/tmux",
 	}
 
 	goPackages = []string{
 		"github.com/tebeka/selenium",
 		"github.com/pkg/sftp",
 		"github.com/spf13/hugo",
+		"golang.org/x/tools/cmd/goimports",
 	}
 
 	dirs = []string{
@@ -107,8 +108,9 @@ var (
 		"~/Videos",
 	}
 )
+
 var (
-	isRoot bool
+	isRoot  bool
 	homeDir string
 )
 
@@ -139,12 +141,42 @@ func main() {
 	createSSHKey()
 	setupUrxvt()
 	installTmux()
+	installGoPackages()
 
 	// TODO(ekg):
 	// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
+}
+
+func installGoPackages() {
+	cmd := exec.Command("go", "list", "...")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Errorf("Error listing Go packages: %s", err)
+		return
+	}
+	installed := map[string]bool{}
+	for _, line := range strings.Split(string(output), "\n") {
+		installed[line] = true
+	}
+
+	toInstall := map[string]bool{}
+	for _, pkg := range goPackages {
+		if _, ok := installed[pkg]; !ok {
+			toInstall[pkg] = true
+		}
+	}
+	for pkg := range toInstall {
+		log.Infof("Installing Go package %s", pkg)
+		cmd := exec.Command("go", "get", "-v", pkg)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Errorf("Error installing Go package %s: %s", pkg, err)
+		}
+	}
 }
 
 func installTmux() {
@@ -214,7 +246,7 @@ func installDotFiles() {
 			return nil
 		}
 		suffixPath := strings.TrimPrefix(path, baseDir)
-		target := expandPath("~"+suffixPath)
+		target := expandPath("~" + suffixPath)
 
 		if info.IsDir() {
 			s, err := os.Stat(target)
@@ -458,6 +490,6 @@ func installYCM() {
 func setupVim() {
 	downloadPathogen()
 
-	installVimPlugins()  // must happen before installYCM
+	installVimPlugins() // must happen before installYCM
 	installYCM()
 }
