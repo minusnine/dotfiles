@@ -145,6 +145,7 @@ func main() {
 
 	// TODO(ekg):
 	// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
+	//   sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-datastore-emulator
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
