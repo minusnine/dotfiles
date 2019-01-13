@@ -9,6 +9,7 @@ Bundle 'myusuf3/numbers.vim'
 Bundle 'flazz/vim-colorschemes'
 Bundle 'fatih/vim-go'
 Bundle 'Valloric/YouCompleteMe'
+Bundle 'roxma/vim-paste-easy'
 call vundle#end()
 filetype plugin indent on
 
@@ -59,12 +60,3 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
 let g:syntastic_go_checkers = ['go', 'gofmt', 'govet']
-
-inoremap " ""<left>
-inoremap ' ''<left>
-inoremap ` ``<left>
-inoremap ( ()<left>
-inoremap [ []<left>
-inoremap { {}<left>
-inoremap {<CR> {<CR>}<ESC>O
-inoremap {;<CR> {<CR>};<ESC>O
