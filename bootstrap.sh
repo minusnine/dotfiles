@@ -28,5 +28,5 @@ PATH="${HOME}/go/bin:${PATH}"
 cd $DOTFILES_DIR
 export GOPATH=${HOME}/go
 go get -t ./...
-sudo GOPATH=$GOPATH go run ${DOTFILES_DIR}/install.go --alsologtostderr
+sudo GOPATH=$GOPATH go run ${DOTFILES_DIR}/install.go --alsologtostderr --real_user=$USER
 go run ${DOTFILES_DIR}/install.go --alsologtostderr

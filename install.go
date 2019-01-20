@@ -13,100 +13,7 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/juju/packaging/manager"
-)
-
-var (
-	packages = []string{
-		"apt-transport-https",
-		"automake",
-		"build-essential",
-		"cmake",
-		"dnsutils",
-		"fonts-inconsolata",
-		"fonts-go",
-		"gcc",
-		"gimp",
-		"git",
-		"htop",
-		"i3",
-		"i3lock",
-		"id3tool",
-		"libevent-dev",
-		"libgit2-dev",
-		"libncurses5-dev",
-		"libssl-dev",
-		"libusb-1.0.0-dev",
-		"man-db",
-		"mercurial",
-		"mosh",
-		"nmap",
-		"parallel",
-		"powertop",
-		"python3-dev",
-		"python-dev",
-		"python-pip",
-		"rofi",
-		"sl",
-		"subversion",
-		"tmux",
-		"tree",
-		"unzip",
-		"vim-nox", // provides vim with python support
-		"weechat-curses",
-		"xbacklight",
-		"xfce4-power-manager",
-		"xfce4-pulseaudio-plugin",
-		"xserver-xorg-input-synaptics",
-		"xss-lock",
-		"zip",
-		"zsh",
-	}
-
-	removePackages = []string{
-		"command-not-found",
-	}
-
-	gitRepos = map[string]string{
-		"https://github.com/gmarik/Vundle.vim.git":       "~/.vim/bundle/Vundle.vim",
-		"https://github.com/robbyrussell/oh-my-zsh.git":  "~/.oh-my-zsh",
-		"https://github.com/minusnine/ericgar.com.git":   "~/src/ericgar.com",
-		"https://github.com/tmux-plugins/tpm":            "~/.tmux/plugins/tpm",
-		"https://go.googlesource.com/go":                 "~/src/go",
-		"https://github.com/myusuf3/numbers.vim.git":     "~/.vim/bundle/numbers",
-		"https://github.com/vim-syntastic/syntastic.git": "~/.vim/bundle/syntastic",
-		"https://github.com/tmux/tmux.git":               "~/src/tmux",
-	}
-
-	goPackages = []string{
-		"github.com/tebeka/selenium",
-		"github.com/pkg/sftp",
-		"github.com/spf13/hugo",
-		"golang.org/x/tools/cmd/goimports",
-	}
-
-	dirs = []string{
-		"~/.vim",
-		"~/.vim/autoload",
-		"~/tmp",
-		"~/tmp/vim",
-		"~/.ssh",
-		"~/src",
-		"~/bin",
-		"~/.urxvt",
-		"~/.urxvt/ext",
-		"~/opt",
-	}
-
-	removeDirs = []string{
-		"~/Desktop",
-		"~/Documents",
-		"~/Downloads",
-		"~/Music",
-		"~/Pictures",
-		"~/Public",
-		"~/Templates",
-		"~/Videos",
-	}
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -115,6 +22,10 @@ var (
 )
 
 func main() {
+	var (
+		configPath = flag.String("config_path", "~/src/dotfiles/config.yaml", "The path to the configuration file.")
+		realUser   = flag.String("real_user", "", "The real user name. Pass when running as root.")
+	)
 	flag.Parse()
 
 	u, err := user.Current()
@@ -123,8 +34,22 @@ func main() {
 	}
 	if u.Name == "root" {
 		isRoot = true
+
+		// TODO(ekg): we could probably do this by inspecting parent processes
+		// instead of requiring a parameter.
+		if *realUser == "" {
+			log.Exit("--real_user must be supplied when running as root.")
+		}
+		u, err = user.Lookup(*realUser)
+		if err != nil {
+			log.Exitf("Error looking up user %s: %s", *realUser, err)
+		}
 	}
 	homeDir = u.HomeDir
+
+	if err := readConfig(*configPath); err != nil {
+		log.Exit(err)
+	}
 
 	if isRoot {
 		managePackages()
@@ -151,6 +76,32 @@ func main() {
 	// background
 }
 
+var config struct {
+	Directories struct {
+		Create []string
+		Remove []string
+	}
+	AptPackages struct {
+		Install []string
+		Remove  []string
+	} `yaml:"apt-packages"`
+	GoPackages      []string          `yaml:"go-packages"`
+	GitRepositories map[string]string `yaml:"git-repositories"` // URL -> Directory
+}
+
+func readConfig(path string) error {
+	buf, err := ioutil.ReadFile(expandPath(path))
+	if err != nil {
+		return fmt.Errorf("error reading config file: %s", err)
+	}
+
+	if err := yaml.UnmarshalStrict(buf, &config); err != nil {
+		return fmt.Errorf("error unmarshalling config file: %s", err)
+	}
+
+	return nil
+}
+
 func installGoPackages() {
 	cmd := exec.Command("go", "list", "...")
 	output, err := cmd.Output()
@@ -164,7 +115,7 @@ func installGoPackages() {
 	}
 
 	toInstall := map[string]bool{}
-	for _, pkg := range goPackages {
+	for _, pkg := range config.GoPackages {
 		if _, ok := installed[pkg]; !ok {
 			toInstall[pkg] = true
 		}
@@ -348,7 +299,7 @@ func installRust() {
 }
 
 func removeDefaultDirs() {
-	for _, dir := range removeDirs {
+	for _, dir := range config.Directories.Remove {
 		dir = expandPath(dir)
 		if _, err := os.Stat(dir); err != nil {
 			if !os.IsNotExist(err) {
@@ -363,7 +314,7 @@ func removeDefaultDirs() {
 }
 
 func makeDirs() {
-	for _, dir := range dirs {
+	for _, dir := range config.Directories.Create {
 		dir = expandPath(dir)
 		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v: %v", dir, err)
@@ -378,7 +329,7 @@ func expandPath(d string) string {
 func managePackages() {
 	apt := manager.NewAptPackageManager()
 
-	for _, pkg := range packages {
+	for _, pkg := range config.AptPackages.Install {
 		if apt.IsInstalled(pkg) {
 			log.V(1).Infof("Package %v already installed", pkg)
 			continue
@@ -399,7 +350,7 @@ func managePackages() {
 }
 
 func cloneGitRepos() {
-	for repo, dir := range gitRepos {
+	for repo, dir := range config.GitRepositories {
 		dir = expandPath(dir)
 		if err := os.MkdirAll(dir, 0750); err != nil {
 			log.Errorf("Error creating directory %v for repository %v: %v", dir, repo, err)
