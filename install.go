@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -10,16 +11,18 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	log "github.com/golang/glog"
 	"github.com/juju/packaging/manager"
 	yaml "gopkg.in/yaml.v2"
 )
 
-var (
-	isRoot  bool
-	homeDir string
-)
+var facts struct {
+	IsRoot         bool
+	HomeDir        string
+	DebianCodeName string
+}
 
 func main() {
 	var (
@@ -33,7 +36,8 @@ func main() {
 		log.Exitf("Error getting current user: %v", err)
 	}
 	if u.Name == "root" {
-		isRoot = true
+		facts.IsRoot = true
+		log.Info("Running as root.")
 
 		// TODO(ekg): we could probably do this by inspecting parent processes
 		// instead of requiring a parameter.
@@ -45,13 +49,18 @@ func main() {
 			log.Exitf("Error looking up user %s: %s", *realUser, err)
 		}
 	}
-	homeDir = u.HomeDir
+	facts.HomeDir = u.HomeDir
+
+	facts.DebianCodeName, err = debianCodeName()
+	if err != nil {
+		log.Exitf("Error looking up user %s: %s", *realUser, err)
+	}
 
 	if err := readConfig(*configPath); err != nil {
 		log.Exit(err)
 	}
 
-	if isRoot {
+	if facts.IsRoot {
 		managePackages()
 		return
 	}
@@ -69,11 +78,18 @@ func main() {
 	installGoPackages()
 
 	// TODO(ekg):
-	// https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
-	//   sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-datastore-emulator
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
+	// add groups: docker
+}
+
+func debianCodeName() (string, error) {
+	buf, err := exec.Command("lsb_release", "--codename", "--short").Output()
+	if err != nil {
+		return "", fmt.Errorf("error determining Debian code name: %s", err)
+	}
+	return strings.TrimSpace(string(buf)), nil
 }
 
 var config struct {
@@ -82,20 +98,33 @@ var config struct {
 		Remove []string
 	}
 	AptPackages struct {
-		Install []string
-		Remove  []string
+		Install      []string
+		Remove       []string
+		Repositories map[string]struct {
+			Distribution, Component string
+		}
 	} `yaml:"apt-packages"`
 	GoPackages      []string          `yaml:"go-packages"`
 	GitRepositories map[string]string `yaml:"git-repositories"` // URL -> Directory
 }
 
 func readConfig(path string) error {
-	buf, err := ioutil.ReadFile(expandPath(path))
+	data, err := ioutil.ReadFile(expandPath(path))
 	if err != nil {
 		return fmt.Errorf("error reading config file: %s", err)
 	}
 
-	if err := yaml.UnmarshalStrict(buf, &config); err != nil {
+	tmpl, err := template.New("config").Parse(string(data))
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %s", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, facts); err != nil {
+		return fmt.Errorf("error templating config file: %s", err)
+	}
+
+	if err := yaml.UnmarshalStrict(buf.Bytes(), &config); err != nil {
 		return fmt.Errorf("error unmarshalling config file: %s", err)
 	}
 
@@ -323,10 +352,12 @@ func makeDirs() {
 }
 
 func expandPath(d string) string {
-	return strings.Replace(d, "~", homeDir, 1)
+	return strings.Replace(d, "~", facts.HomeDir, 1)
 }
 
 func managePackages() {
+	addAptRepositories()
+
 	apt := manager.NewAptPackageManager()
 
 	for _, pkg := range config.AptPackages.Install {
@@ -335,7 +366,7 @@ func managePackages() {
 			continue
 		}
 		log.Warningf("Package %v is not installed", pkg)
-		if isRoot {
+		if facts.IsRoot {
 			if err := apt.Install(pkg); err != nil {
 				log.Errorf("Error installing %s: %v\n", pkg, err)
 			} else {
@@ -416,7 +447,7 @@ func installNode() {
 	}
 
 	log.Warningf("Package %v is not installed", pkg)
-	if !isRoot {
+	if !facts.IsRoot {
 		return
 	}
 	if err := apt.Install(pkg); err != nil {
@@ -444,4 +475,17 @@ func setupVim() {
 
 	installVimPlugins() // must happen before installYCM
 	installYCM()
+}
+
+func addAptRepositories() {
+	// TODO(ekg): conditionanlly and apt-get update if added
+	for url, spec := range config.AptPackages.Repositories {
+		args := []string{"deb", url, spec.Distribution, spec.Component}
+		if buf, err := exec.Command("apt-add-repository", strings.Join(args, " ")).CombinedOutput(); err != nil {
+			log.Errorf("Error adding repository %s: %s", url, buf)
+		}
+	}
+	if buf, err := exec.Command("apt-get", "update").CombinedOutput(); err != nil {
+		log.Errorf("Error updating apt: %s", buf)
+	}
 }

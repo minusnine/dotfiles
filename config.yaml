@@ -1,15 +1,28 @@
 apt-packages:
+  repositories:
+    https://download.docker.com/linux/debian:
+      distribution: {{.DebianCodeName}}
+      component: stable
+    http://packages.cloud.google.com/apt:
+      distribution: cloud-sdk-{{.DebianCodeName}}
+      component: main
+      
   install:
     - apt-transport-https
     - automake
     - build-essential
     - cmake
     - dnsutils
+    - docker-ce
     - fonts-inconsolata
     - fonts-go
     - gcc
     - gimp
     - git
+    - google-cloud-sdk
+    - google-cloud-sdk-app-engine-python
+    - google-cloud-sdk-datastore-emulator
+    - gnupg2
     - htop
     - i3
     - i3lock
@@ -30,6 +43,8 @@ apt-packages:
     - python-pip
     - rofi
     - sl
+    - software-properties-common  # for add-apt-repository
+    - strace
     - subversion
     - tmux
     - tree
@@ -84,6 +99,3 @@ directories:
     - ~/Public
     - ~/Templates
     - ~/Videos
-
-
-
