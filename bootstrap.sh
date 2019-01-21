@@ -6,12 +6,16 @@ if [ ! -e /usr/bin/go ]; then
 	sudo apt-get -y install golang
 fi
 
+if [ ! -e /usr/bin/git ]; then
+	sudo apt-get -y install git
+fi
+
 if [ ! -e ~/src/go/bin/go ]; then
 	if [ ! -e ~/src/go ]; then
 		git clone https://go.googlesource.com/go ~/src/go
 	fi
 	cd ~/src/go
-	git checkout go1.11.2
+	git checkout go1.11.4
 	cd ~/src/go/src
 	./all.bash
 fi
