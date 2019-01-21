@@ -13,3 +13,4 @@ curl https://raw.githubusercontent.com/minusnine/dotfiles/master/bootstrap.sh -s
 * Handle support for additional, private dotfiles
 * Do better validation of the configuration file to protect against malicious
 	CLI inputs.
+* Do better error handling. Don't just log.
