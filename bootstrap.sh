@@ -2,6 +2,10 @@
 
 set -e
 
+if [ ! -e /usr/bin/gcc ]; then
+  sudo apt-get -y install gcc
+fi
+
 if [ ! -e /usr/bin/go ]; then
 	sudo apt-get -y install golang
 fi
@@ -15,7 +19,8 @@ if [ ! -e ~/src/go/bin/go ]; then
 		git clone https://go.googlesource.com/go ~/src/go
 	fi
 	cd ~/src/go
-	git checkout go1.11.4
+  latest=$(git describe --tags `git rev-list --tags --max-count=1`)
+	git checkout ${latest}
 	cd ~/src/go/src
 	./all.bash
 fi
