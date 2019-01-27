@@ -1,8 +1,8 @@
 dockerbuild:
-	docker build -t test .
+	docker build -t dotfiles .
 
 dockerrun:
-	docker run -it test
+	docker run -it dotfiles
 
 dockerbuildrun: dockerbuild dockerrun
 
