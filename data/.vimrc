@@ -33,7 +33,7 @@ set smarttab             " do the right thing with tabs
 set softtabstop=2        " Number of spaces that a tab counts for
 set t_Co=256             " Use 256 colors
 set tabstop=2            " Tabs use eight columns to stand out as an error
-colorscheme ir_black     " Nice color scheme
+colorscheme tir_black    " Nice color scheme
 syntax on                " Use syntax highlighting
 
 let g:go_fmt_command = "goimports"
