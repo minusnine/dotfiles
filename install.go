@@ -22,11 +22,12 @@ var facts struct {
 	IsRoot         bool
 	HomeDir        string
 	DebianCodeName string
+	RealUser       string
 }
 
 func main() {
 	var (
-		configPath = flag.String("config_path", "~/src/dotfiles/config.yaml", "The path to the configuration file.")
+		configPath = flag.String("config_path", "~/go/src/github.com/minusnine/dotfiles/config.yaml", "The path to the configuration file.")
 		realUser   = flag.String("real_user", "", "The real user name. Pass when running as root.")
 	)
 	flag.Parse()
@@ -48,6 +49,7 @@ func main() {
 		if err != nil {
 			log.Exitf("Error looking up user %s: %s", *realUser, err)
 		}
+		facts.RealUser = *realUser
 	}
 	facts.HomeDir = u.HomeDir
 
@@ -62,6 +64,7 @@ func main() {
 
 	if facts.IsRoot {
 		managePackages()
+		manageGroups()
 		return
 	}
 	log.Infof("Re-run as root to install packages.")
@@ -106,6 +109,7 @@ var config struct {
 	} `yaml:"apt-packages"`
 	GoPackages      []string          `yaml:"go-packages"`
 	GitRepositories map[string]string `yaml:"git-repositories"` // URL -> Directory
+	Groups          []string
 }
 
 func readConfig(path string) error {
@@ -160,11 +164,32 @@ func installGoPackages() {
 	}
 }
 
+func manageGroups() {
+	for _, name := range config.Groups {
+		if _, err := user.LookupGroup(name); err != nil {
+			if _, ok := err.(*user.UnknownGroupError); ok {
+				if err := exec.Command("addgroup", name).Run(); err != nil {
+					log.Errorf("Error creating group %s: %s", name, err)
+					continue
+				}
+			} else {
+				log.Errorf("Error looking up group %s: %s", name, err)
+				continue
+			}
+		}
+
+		if err := exec.Command("adduser", facts.RealUser, name).Run(); err != nil {
+			log.Errorf("Error adding user to group %s: %s", name, err)
+		}
+	}
+}
+
 func installTmux() {
 	if _, err := os.Stat(expandPath("~/opt/bin/tmux")); !os.IsNotExist(err) {
 		log.V(1).Infof("~/opt/bin/tmux already exists, skipping build.")
 		return
 	}
+	log.Infof("Installing tmux from source")
 	cmd := exec.Command("sh", "autogen.sh")
 	cmd.Dir = expandPath("~/src/tmux")
 	cmd.Stdout = os.Stdout
@@ -303,6 +328,13 @@ func runScript(script string) error {
 	return cmd.Run()
 }
 
+func runCommand(cmd string, args ...string) error {
+	c := exec.Command(cmd, args...)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
+}
+
 func installRust() {
 	if _, err := exec.LookPath("rust"); err == nil {
 		return
@@ -352,7 +384,7 @@ func makeDirs() {
 }
 
 func expandPath(d string) string {
-	return strings.Replace(d, "~", facts.HomeDir, 1)
+	return strings.Replace(d, "~", facts.HomeDir, -1)
 }
 
 func managePackages() {
@@ -367,13 +399,14 @@ func managePackages() {
 		}
 		log.Warningf("Package %v is not installed", pkg)
 		if facts.IsRoot {
+			log.Infof("Installing package %s", pkg)
 			if err := apt.Install(pkg); err != nil {
-				log.Errorf("Error installing %s: %v\n", pkg, err)
+				log.Errorf("Error installing package %s: %v", pkg, err)
 			} else {
-				log.Infof("Installed package %v successfully", pkg)
+				log.Infof("Installed package %s successfully", pkg)
 			}
 		} else {
-			log.Warningf("Skipping package installation for %v", pkg)
+			log.Warningf("Skipping package %s installation", pkg)
 		}
 	}
 
@@ -421,7 +454,7 @@ func downloadPathogen() {
 }
 
 func installVimPlugins() {
-	cmd := exec.Command("vim", "+PluginInstall", "+qall", "-i", "NONE", "-o", "-")
+	cmd := exec.Command("vim", "+PluginInstall!", "+qall", "-i", "NONE", "-o", "-")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
@@ -478,10 +511,24 @@ func setupVim() {
 }
 
 func addAptRepositories() {
-	// TODO(ekg): conditionanlly and apt-get update if added
+	apt := manager.NewAptPackageManager()
+
+	for _, pkg := range []string{"software-properties-common", "gnupg2"} {
+		if !apt.IsInstalled(pkg) {
+			log.Infof("Installing package %s", pkg)
+			if err := apt.Install(pkg); err != nil {
+				log.Errorf("Error installing package %s: %s", pkg, err)
+				return
+			}
+		}
+	}
+
+	// TODO(ekg): only do this conditionally and apt-get update if added
 	for url, spec := range config.AptPackages.Repositories {
 		args := []string{"deb", url, spec.Distribution, spec.Component}
+		log.Infof("Adding Apt repository %s: add-apt-repository %v", url, args)
 		if buf, err := exec.Command("apt-add-repository", strings.Join(args, " ")).CombinedOutput(); err != nil {
+			log.Warning("apt-add-repository ", strings.Join(args, " "))
 			log.Errorf("Error adding repository %s: %s", url, buf)
 		}
 	}

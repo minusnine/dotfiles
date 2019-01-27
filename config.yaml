@@ -13,16 +13,17 @@ apt-packages:
     - build-essential
     - cmake
     - dnsutils
-    - docker-ce
+    # TODO(ekg): fix this after adding the repository properly.
+    # - docker-ce
     - fonts-inconsolata
     - fonts-go
     - gcc
     - gimp
     - git
+    # TODO(ekg): the Google Cloud SDK doesn't work properly; fix the repository.
     - google-cloud-sdk
     - google-cloud-sdk-app-engine-python
     - google-cloud-sdk-datastore-emulator
-    - gnupg2
     - htop
     - i3
     - i3lock
@@ -44,6 +45,7 @@ apt-packages:
     - rofi
     - sl
     - software-properties-common  # for add-apt-repository
+    - ssh
     - strace
     - subversion
     - tmux
@@ -54,7 +56,8 @@ apt-packages:
     - xbacklight
     - xfce4-power-manager
     - xfce4-pulseaudio-plugin
-    - xserver-xorg-input-synaptics
+    # TODO(ekg): this takes forever to install. why?
+    # - xserver-xorg-input-synaptics
     - xss-lock
     - zip
     - zsh
@@ -99,3 +102,6 @@ directories:
     - ~/Public
     - ~/Templates
     - ~/Videos
+
+groups: 
+  - docker
