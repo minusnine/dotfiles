@@ -1,18 +1,50 @@
 #!/bin/bash
-
+#
+# Options:
+#
+# -s: Build Go from source. If not provided, then just use the package.
+#
 set -e
 
-while getopts sc o
+while getopts s o
 do
   case "$o" in
 	s) build_from_source=1;;
-  c) skip_clone=1;;
 	[?])	echo "Usage: $0 [-s] " >&2
 		exit 1;;
 	esac
 done
 
-sudo apt-get --no-install-recommends -y install ca-certificates gcc golang git lsb-release ssh
+if [ ! -x /usr/bin/gcc ]; then
+	echo "Installing gcc"
+	sudo apt-get --no-install-recommends -y install --quiet gcc
+	echo "gcc installed"
+fi
+if [ ! -x /usr/bin/git ]; then
+	echo "Installing git"
+	sudo apt-get --no-install-recommends -y install --quiet git
+	echo "git installed"
+fi
+if [ ! -x /usr/bin/go ]; then
+	echo "Installing go"
+	sudo apt-get --no-install-recommends -y install --quiet golang
+	echo "go installed"
+fi
+if [ ! -x /usr/bin/lsb_release ]; then
+	echo "Installing lsb_release"
+	sudo apt-get --no-install-recommends -y install --quiet lsb-release
+	echo "lsb_release installed"
+fi
+if [ ! -x /usr/bin/ssh ]; then
+	echo "Installing ssh"
+	sudo apt-get --no-install-recommends -y install --quiet ssh
+	echo "ssh installed"
+fi
+if [ ! -d /usr/share/ca-certificates ]; then
+	echo "Installing ca-certificates"
+	sudo apt-get --no-install-recommends -y install --quiet ca-certificates
+	echo "ca-certificates installed"
+fi
 
 if [[ ${build_from_source} -eq 1 && ! -e ~/src/go/bin/go ]]; then
 	if [ ! -e ~/src/go ]; then
@@ -25,21 +57,28 @@ if [[ ${build_from_source} -eq 1 && ! -e ~/src/go/bin/go ]]; then
 	cd ~/src/go/src
 	./all.bash
 fi
+PATH="${HOME}/go/bin:${PATH}"
 
-# TODO(ekg): handle this clone better to avoid clobbering a Docker local copy.
-DOTFILES_DIR=~/go/src/github.com/minusnine
-if [ ${skip_clone} -eq 1 ]; then
-  DOTFILES_DIR="${DOTFILES_DIR}/dotfiles"
-else
-  echo "Cloning dotfiles to $DOTFILES_DIR"
-  if [ ! -e ${DOTFILES_DIR} ]; then
-    mkdir -p ${DOTFILES_DIR}
-    git clone https://github.com/minusnine/dotfiles ${DOTFILES_DIR}
-  fi
-  DOTFILES_DIR="${DOTFILES_DIR}/dotfiles"
+DOTFILES_DIR=~/go/src/github.com/minusnine/dotfiles
+DOTFILES_URL="https://github.com/minusnine/dotfiles"
+
+if [ ! -e ${DOTFILES_DIR} ]; then
+	echo "Cloning dotfiles to $DOTFILES_DIR"
+	mkdir -p ${DOTFILES_DIR}
+	git clone ${DOTFILES_URL} $(dirname ${DOTFILES_DIR})
+elif [ ! -e ${DOTFILES_DIR}/.git ]; then
+	echo "Pulling dotfiles in $DOTFILES_DIR"
+	mkdir -p ${DOTFILES_DIR}
+	git init ${DOTFILES_DIR}
+	git remote add origin ${DOTFILES_URL} || /bin/true
+	git pull
 fi
 
-PATH="${HOME}/go/bin:${PATH}"
+if [ ! -e ~/src/dotfiles ]; then
+	mkdir ~/src
+	ln -sf $DOTFILES_DIR ~/src/dotfiles
+fi
+
 cd $DOTFILES_DIR
 export GOPATH=${HOME}/go
 go get -t ./...

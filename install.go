@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -23,6 +24,7 @@ var facts struct {
 	HomeDir        string
 	DebianCodeName string
 	RealUser       string
+	DotfilesDir    string
 }
 
 func main() {
@@ -52,6 +54,7 @@ func main() {
 		facts.RealUser = *realUser
 	}
 	facts.HomeDir = u.HomeDir
+	facts.DotfilesDir = expandPath(path.Dir(*configPath))
 
 	facts.DebianCodeName, err = debianCodeName()
 	if err != nil {
@@ -67,7 +70,7 @@ func main() {
 		manageGroups()
 		return
 	}
-	log.Infof("Re-run as root to install packages.")
+	log.Info("Not installing packages and groups as we are not root.")
 
 	makeDirs()
 	cloneGitRepos()
@@ -104,7 +107,7 @@ var config struct {
 		Install      []string
 		Remove       []string
 		Repositories map[string]struct {
-			Distribution, Component string
+			Distribution, Component, Key string
 		}
 	} `yaml:"apt-packages"`
 	GoPackages      []string          `yaml:"go-packages"`
@@ -155,19 +158,19 @@ func installGoPackages() {
 	}
 	for pkg := range toInstall {
 		log.Infof("Installing Go package %s", pkg)
-		cmd := exec.Command("go", "get", "-v", pkg)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			log.Errorf("Error installing Go package %s: %s", pkg, err)
+		output, err := exec.Command("go", "get", "-v", pkg).CombinedOutput()
+		if err != nil {
+			log.Errorf("Error installing Go package %s: %s. Output:%s\n", pkg, err, output)
+			continue
 		}
+		log.Infof("Go package %s installed", pkg)
 	}
 }
 
 func manageGroups() {
 	for _, name := range config.Groups {
 		if _, err := user.LookupGroup(name); err != nil {
-			if _, ok := err.(*user.UnknownGroupError); ok {
+			if _, ok := err.(user.UnknownGroupError); ok {
 				if err := exec.Command("addgroup", name).Run(); err != nil {
 					log.Errorf("Error creating group %s: %s", name, err)
 					continue
@@ -320,8 +323,10 @@ func downloadScript(url string) (string, error) {
 	return string(buf), err
 }
 
-func runScript(script string) error {
-	cmd := exec.Command("sh")
+func runScript(script string, args ...string) error {
+	argv := []string{"-s"}
+	argv = append(argv, args...)
+	cmd := exec.Command("sh", argv...)
 	cmd.Stdin = strings.NewReader(script)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -349,7 +354,7 @@ func installRust() {
 		return
 	}
 
-	if err := runScript(script); err != nil {
+	if err := runScript(script, "-y"); err != nil {
 		log.Errorf("Error installing Rust: %s", err)
 	}
 
@@ -454,12 +459,13 @@ func downloadPathogen() {
 }
 
 func installVimPlugins() {
+	log.Info("Installing/updating vim plugins")
 	cmd := exec.Command("vim", "+PluginInstall!", "+qall", "-i", "NONE", "-o", "-")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		log.Errorf("Error installing Vim plugins: %s", err)
+		return
 	}
+	log.Info("vim plugins installed/updated")
 }
 
 func installNode() {
@@ -525,6 +531,14 @@ func addAptRepositories() {
 
 	// TODO(ekg): only do this conditionally and apt-get update if added
 	for url, spec := range config.AptPackages.Repositories {
+		if spec.Key != "" {
+			log.Infof("Adding key for Apt repository %s from %s", url, spec.Key)
+			if buf, err := exec.Command("apt-key", "add", spec.Key).CombinedOutput(); err != nil {
+				log.Errorf("Error adding key for Apt repository %s from %s: %s. Output:\n%s", url, spec.Key, err, buf)
+				continue
+			}
+		}
+
 		args := []string{"deb", url, spec.Distribution, spec.Component}
 		log.Infof("Adding Apt repository %s: add-apt-repository %v", url, args)
 		if buf, err := exec.Command("apt-add-repository", strings.Join(args, " ")).CombinedOutput(); err != nil {

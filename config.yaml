@@ -3,9 +3,11 @@ apt-packages:
     https://download.docker.com/linux/debian:
       distribution: {{.DebianCodeName}}
       component: stable
+      key: {{.DotfilesDir}}/keys/docker-apt-key.gpg
     http://packages.cloud.google.com/apt:
       distribution: cloud-sdk-{{.DebianCodeName}}
       component: main
+      key: {{.DotfilesDir}}/keys/google-cloud-apt-key.gpg
       
   install:
     - apt-transport-https
@@ -28,6 +30,7 @@ apt-packages:
     - i3
     - i3lock
     - id3tool
+    - less
     - libevent-dev
     - libgit2-dev
     - libncurses5-dev
@@ -38,6 +41,7 @@ apt-packages:
     - mosh
     - nmap
     - parallel
+    - pkg-config
     - powertop
     - python3-dev
     - python-dev
