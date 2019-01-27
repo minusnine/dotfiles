@@ -6,6 +6,6 @@ dockerrun:
 
 dockerbuildrun: dockerbuild dockerrun
 
-dockerprune:
+dockerclean:
 	docker system prune --volumes
 

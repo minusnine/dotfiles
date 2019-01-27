@@ -11,4 +11,5 @@ ENV USER eric
 COPY . /home/eric/go/src/github.com/minusnine/dotfiles
 RUN sudo chown -R eric:eric /home/eric
 RUN sudo -u eric /home/eric/go/src/github.com/minusnine/dotfiles/bootstrap.sh
+WORKDIR /home/eric
 CMD /usr/bin/zsh -i -l
