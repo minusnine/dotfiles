@@ -20,11 +20,12 @@ import (
 )
 
 var facts struct {
-	IsRoot         bool
-	HomeDir        string
-	DebianCodeName string
-	RealUser       string
-	DotfilesDir    string
+	IsRoot           bool
+	HomeDir          string
+	DebianCodeName   string
+	RealUser         string
+	DotfilesDir      string
+	Python3ConfigDir string
 }
 
 func main() {
@@ -34,32 +35,7 @@ func main() {
 	)
 	flag.Parse()
 
-	u, err := user.Current()
-	if err != nil {
-		log.Exitf("Error getting current user: %v", err)
-	}
-	if u.Name == "root" {
-		facts.IsRoot = true
-		log.Info("Running as root.")
-
-		// TODO(ekg): we could probably do this by inspecting parent processes
-		// instead of requiring a parameter.
-		if *realUser == "" {
-			log.Exit("--real_user must be supplied when running as root.")
-		}
-		u, err = user.Lookup(*realUser)
-		if err != nil {
-			log.Exitf("Error looking up user %s: %s", *realUser, err)
-		}
-		facts.RealUser = *realUser
-	}
-	facts.HomeDir = u.HomeDir
-	facts.DotfilesDir = expandPath(path.Dir(*configPath))
-
-	facts.DebianCodeName, err = debianCodeName()
-	if err != nil {
-		log.Exitf("Error looking up user %s: %s", *realUser, err)
-	}
+	populateFacts(*realUser, *configPath)
 
 	if err := readConfig(*configPath); err != nil {
 		log.Exit(err)
@@ -87,7 +63,43 @@ func main() {
 	// /usr/lib/pm-utils/sleep.d/00xscreensaver
 	// font
 	// background
-	// add groups: docker
+}
+
+func populateFacts(realUser, configPath string) {
+	u, err := user.Current()
+	if err != nil {
+		log.Exitf("Error getting current user: %v", err)
+	}
+	if u.Name == "root" {
+		facts.IsRoot = true
+		log.Info("Running as root.")
+
+		// TODO(ekg): we could probably do this by inspecting parent processes
+		// instead of requiring a parameter.
+		if realUser == "" {
+			log.Exit("--real_user must be supplied when running as root.")
+		}
+		u, err = user.Lookup(realUser)
+		if err != nil {
+			log.Exitf("Error looking up user %s: %s", realUser, err)
+		}
+		facts.RealUser = realUser
+	}
+	facts.HomeDir = u.HomeDir
+	facts.DotfilesDir = expandPath(path.Dir(configPath))
+
+	facts.DebianCodeName, err = debianCodeName()
+	if err != nil {
+		log.Exitf("Error looking up user %s: %s", realUser, err)
+	}
+
+	cmd := exec.Command("python3-config", "--configdir")
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		log.Exitf("Error running python3-config --configdir: %s", err)
+	}
+	facts.Python3ConfigDir = strings.TrimSpace(string(out))
 }
 
 func debianCodeName() (string, error) {
@@ -324,9 +336,9 @@ func downloadScript(url string) (string, error) {
 }
 
 func runScript(script string, args ...string) error {
-	argv := []string{"-s"}
+	argv := []string{"-s", "--"}
 	argv = append(argv, args...)
-	cmd := exec.Command("sh", argv...)
+	cmd := exec.Command("bash", argv...)
 	cmd.Stdin = strings.NewReader(script)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -341,7 +353,7 @@ func runCommand(cmd string, args ...string) error {
 }
 
 func installRust() {
-	if _, err := exec.LookPath("rust"); err == nil {
+	if _, err := exec.LookPath("rustc"); err == nil {
 		return
 	}
 	if _, err := os.Stat(expandPath("~/.cargo/bin/rustc")); err == nil {
@@ -468,6 +480,17 @@ func installVimPlugins() {
 	log.Info("vim plugins installed/updated")
 }
 
+func installGoVimBinaries() {
+	log.Info("Installing/updating go binaries for vim plugins")
+	cmd := exec.Command("vim", "+GoInstallBinaries!", "+qall", "-i", "NONE", "-o", "-")
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error installing go binaries for vim plugins: %s", err)
+		return
+	}
+	log.Info("go binaries for vim plugins installed/updated")
+
+}
+
 func installNode() {
 	apt := manager.NewAptPackageManager()
 	const pkg = "nodejs"
@@ -510,10 +533,67 @@ func installYCM() {
 }
 
 func setupVim() {
+	compileVim()
 	downloadPathogen()
 
 	installVimPlugins() // must happen before installYCM
 	installYCM()
+	installGoVimBinaries()
+}
+
+func compileVim() {
+	if _, err := os.Stat(expandPath("~/opt/vim/bin/vim")); !os.IsNotExist(err) {
+		log.V(1).Infof("~/opt/vim/bin/vim already exists, skipping build.")
+		return
+	}
+
+	log.Infof("Compiling and installing vim")
+
+	cmd := exec.Command("make", "distclean")
+	cmd.Dir = expandPath("~/src/vim")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running vim make distclean: %s", err)
+		return
+	}
+
+	cmd = exec.Command("./configure", []string{
+		"--with-features=huge",
+		"--enable-multibyte",
+		"--enable-rubyinterp=yes",
+		"--enable-python3interp=yes",
+		"--with-python3-config-dir=" + facts.Python3ConfigDir,
+		"--enable-perlinterp=yes",
+		"--enable-luainterp=yes",
+		"--enable-gui=gtk2",
+		"--enable-cscope",
+		"--prefix=" + expandPath("~/opt/vim")}...)
+	cmd.Dir = expandPath("~/src/vim")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux make install: %s", err)
+		return
+	}
+
+	cmd = exec.Command("make")
+	cmd.Dir = expandPath("~/src/vim")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux make: %s", err)
+		return
+	}
+
+	cmd = exec.Command("make", "install")
+	cmd.Dir = expandPath("~/src/vim")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Error running tmux make install: %s", err)
+		return
+	}
 }
 
 func addAptRepositories() {

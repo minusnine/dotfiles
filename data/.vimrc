@@ -59,4 +59,6 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
-let g:syntastic_go_checkers = ['go', 'gofmt', 'govet']
+" Syntastic does not support Go development versions.
+" https://github.com/vim-syntastic/syntastic/issues/1528
+" let g:syntastic_go_checkers = ['go', 'gofmt', 'govet']

@@ -12,6 +12,8 @@ apt-packages:
   install:
     - apt-transport-https
     - automake
+    # yacc is needed to compile tmux.
+    - bison
     - build-essential
     - cmake
     - dnsutils
@@ -77,6 +79,7 @@ git-repositories:
   https://github.com/myusuf3/numbers.vim.git:     ~/.vim/bundle/numbers
   https://github.com/vim-syntastic/syntastic.git: ~/.vim/bundle/syntastic
   https://github.com/tmux/tmux.git:               ~/src/tmux
+  https://github.com/vim/vim.git:                 ~/src/vim
 
 go-packages:
   - github.com/tebeka/selenium

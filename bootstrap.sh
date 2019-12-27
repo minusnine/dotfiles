@@ -5,6 +5,7 @@
 # -s: Build Go from source. If not provided, then just use the package.
 #
 set -e
+set -x
 
 while getopts s o
 do
@@ -46,14 +47,14 @@ if [ ! -d /usr/share/ca-certificates ]; then
 	echo "ca-certificates installed"
 fi
 
-if [[ ${build_from_source} -eq 1 && ! -e ~/src/go/bin/go ]]; then
+if [[ ${build_from_source} -eq 1 ]] && [ ! -e ~/src/go/bin/go ]; then
 	if [ ! -e ~/src/go ]; then
 		git clone https://go.googlesource.com/go ~/src/go
 	fi
 	cd ~/src/go
-  latest=$(git describe --tags `git rev-list --tags --max-count=1`)
+	latest=$(git describe --tags `git rev-list --tags --max-count=1`)
+  echo "Building go version ${latest}"
 	git checkout ${latest}
-  exit
 	cd ~/src/go/src
 	./all.bash
 fi
@@ -64,18 +65,17 @@ DOTFILES_URL="https://github.com/minusnine/dotfiles"
 
 if [ ! -e ${DOTFILES_DIR} ]; then
 	echo "Cloning dotfiles to $DOTFILES_DIR"
-	mkdir -p ${DOTFILES_DIR}
-	git clone ${DOTFILES_URL} $(dirname ${DOTFILES_DIR})
+	git clone ${DOTFILES_URL} ${DOTFILES_DIR}
 elif [ ! -e ${DOTFILES_DIR}/.git ]; then
 	echo "Pulling dotfiles in $DOTFILES_DIR"
 	mkdir -p ${DOTFILES_DIR}
-	git init ${DOTFILES_DIR}
-	git remote add origin ${DOTFILES_URL} || /bin/true
-	git pull
+	git -C ${DOTFILES_DIR} init
+	git -C ${DOTFILES_DIR} remote add origin ${DOTFILES_URL} || /bin/true
+	git -C ${DOTFILES_DIR} pull
 fi
 
 if [ ! -e ~/src/dotfiles ]; then
-	mkdir ~/src
+	[ -e ~/src ] || mkdir ~/src
 	ln -sf $DOTFILES_DIR ~/src/dotfiles
 fi
 
